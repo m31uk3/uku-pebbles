@@ -24,12 +24,12 @@ The specification is format-independent. YAML front-matter in Markdown is the v1
 
 Every UKU has three sections:
 
-**Header** — Immutable identity and provenance:
-`uku_id`, `created_at`, `uku_type`, `title`, `source`
+**Header** — Immutable identity and provenance (system-generated, zero user input):
+`uku_id`, `created_at`, `uku_type`, `title`, `source`, `content_hash`
 
-**Metadata** — Experiential + interspecies context:
+**Metadata** — Experiential + interspecies context (human-provided at capture, agent-enriched after validation):
 - **Context Elements** — why you captured it, what you were doing, how you felt, what you planned to do next
-- **Interspecies Cache** — how the human experienced it, how agents interpret it, and a shared caching score that both species maintain
+- **Interspecies Cache** — how the human experienced it, how agents interpret it, and a shared caching score that both species maintain. SAGE validators populate `agent_perspective`, `confidence`, and `decay_factor` through BFT consensus.
 
 **Body** — Raw content in Markdown.
 
@@ -55,10 +55,36 @@ UKU-Pebbles extends that vision into **interspecies territory**: a shared memory
 
 - **Capture-at-moment** — All experiential metadata is recorded at creation time, not retrofitted.
 - **Human-first, agent-ready** — Every UKU is a readable Markdown file. Agents enrich, they don't own.
-- **Sovereign & private** — No third-party services required for core storage or indexing.
+- **Sovereign & private** — Zero API calls by default. All inference runs on-device. No third-party services required for core storage or indexing. SAGE provides vault encryption and access control.
 - **Consensus-ready** — Every UKU can be proposed to a validation layer for drift prevention.
+- **Ontological data model** — Tags are not strings in an array — they are links to Tag objects. People are not names — they are links to Person objects. This semantic graph is what enables agents, recall, and emergent insight to operate with full understanding.
+- **Tidy data invariant** — Every field is independently queryable. No composite prose strings. `emotional_state: "Excited + slightly annoyed"` is a defect; typed emotion enums with confidence and provenance are correct.
+- **Pre-attentive attributes** — Auto-suggested metadata must be obviously right or obviously wrong, never ambiguous. We succeed or fail on capture friction.
+- **Device-agnostic, device-aware** — The spec is universal — any device can produce a valid UKU. But the richness of experiential metadata varies by device. The spec accommodates both without requiring either.
 - **Living** — Fields like `current_relevance` and `shared_caching_layer_score` evolve via background agents.
 - **Format-independent** — The data model is abstract; YAML, TOML, JSON are serialization bindings.
+
+## Architecture
+
+```
+Human captures UKU (Obsidian / Chrome Extension / Share Sheet)
+        │
+        ▼
+    UKU (.md + YAML front-matter)
+    Header + Context Elements + Interspecies Cache + Body
+        │
+        │ MCP payload
+        ▼
+    SAGE (Validation Layer)
+    4 app validators → BFT consensus → PoE-weighted voting
+        │
+        ├── Enriched UKU writeback
+        │   confidence + decay_factor + agent_perspective
+        │
+        └── ByteRover (Retrieval Layer)
+            .brv/context-tree → ContextEngine.assemble(prompt)
+            → selective retrieval → AI agents
+```
 
 ## Repository Structure
 
