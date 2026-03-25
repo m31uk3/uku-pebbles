@@ -11,6 +11,7 @@
 - Added conspiracy-board / evidence-wall mental model as the canonical north star
 - Further stripped to the absolute minimal tech stack that works
 - Incorporated universal validation from practitioner consensus: simplest Obsidian + metadata memory is what actually works for LLMs/agents
+- Added weighting model: explicit human priority in files, implicit behavioral signals in the index, agent-computed effective weight
 
 ---
 
@@ -76,6 +77,8 @@ tags:
 # New fields always allowed (fluid)
 # interspecies_caching_signal: "high"
 
+weight: 0.9                                           # optional – human-assigned importance (0.0–1.0)
+
 status: draft | annotated | published | archived
 ---
 **Full content here** (Markdown body – text, images, code, etc.)
@@ -99,7 +102,57 @@ These strings are computed on-demand by the Postgres JSONB index. No data is eve
 
 ---
 
-### 6. Storage & Indexing Layer (The Minimal "Wall")
+### 6. Weighting Model
+
+Humans put different emphasis on different things. Pebbles captures this through three layers of signal, each stored where it belongs:
+
+#### 6.1 Explicit Weight (in the file)
+
+An optional `weight` field (0.0–1.0) in the YAML frontmatter. This is the human saying "this matters" at capture time or any time after. It lives in the file because it's intentional metadata — the same as `emotional_state` or `category`.
+
+```yaml
+weight: 0.9   # human-assigned importance
+```
+
+If omitted, no default is assumed — the pebble is simply unweighted. Agents never write this field; only humans do.
+
+#### 6.2 Implicit Signals (in the index only)
+
+Behavioral signals that reveal importance through action, not declaration. These are tracked in the index table and **never written back to files** (no churn, no sovereignty violation):
+
+| Signal | What it captures |
+|--------|-----------------|
+| `access_count` | Times the pebble was opened/viewed/queried |
+| `update_count` | Times the source file was modified |
+| `last_accessed_at` | Most recent open/view/query timestamp |
+| `last_updated_at` | Most recent file modification timestamp |
+| `reference_count` | Times this pebble appeared in a red-string result |
+
+These are append-only counters and timestamps — trivial to maintain in the watcher.
+
+#### 6.3 Effective Weight (computed by agents)
+
+Agents combine explicit weight + implicit signals + time decay into a single `effective_weight` score stored in the index. The formula is deliberately left to the agent implementation, but the inputs are fixed:
+
+- `weight` (from file, if present)
+- Implicit signals (from index)
+- Time decay (age since creation, time since last access)
+- Pattern signals (see 6.4)
+
+This is a living value — it changes as the human interacts with their vault. Agents recompute it periodically or on access.
+
+#### 6.4 Pattern Weights (cross-pebble)
+
+Some weight is emergent, not per-pebble:
+- A **category** that gets accessed 10x more than others carries implicit importance
+- A **tag** that appears across many high-weight pebbles is itself a high-signal tag
+- A **person** or **emotional_state** that correlates with frequent revisits reveals what the human actually cares about
+
+Agents detect these patterns from the index and use them to boost or dampen effective weight across related pebbles. This is the "red strings have thickness" extension — some strings are thicker than others because the human keeps pulling on them.
+
+---
+
+### 7. Storage & Indexing Layer (The Minimal "Wall")
 
 **Single recommendation (v2.1): Postgres + JSONB**
 
@@ -113,14 +166,25 @@ These strings are computed on-demand by the Postgres JSONB index. No data is eve
 
 ```sql
 CREATE TABLE pebbles (
-    uku_id       TEXT PRIMARY KEY,
-    file_path    TEXT NOT NULL UNIQUE,
-    yaml_data    JSONB NOT NULL,
-    body_text    TEXT,
-    indexed_at   TIMESTAMPTZ DEFAULT now()
+    uku_id           TEXT PRIMARY KEY,
+    file_path        TEXT NOT NULL UNIQUE,
+    yaml_data        JSONB NOT NULL,
+    body_text        TEXT,
+    indexed_at       TIMESTAMPTZ DEFAULT now(),
+
+    -- Implicit behavioral signals (never written back to files)
+    access_count     INTEGER DEFAULT 0,
+    update_count     INTEGER DEFAULT 0,
+    reference_count  INTEGER DEFAULT 0,
+    last_accessed_at TIMESTAMPTZ,
+    last_updated_at  TIMESTAMPTZ,
+
+    -- Agent-computed effective weight
+    effective_weight REAL
 );
 
 CREATE INDEX idx_pebbles_yaml ON pebbles USING GIN (yaml_data);
+CREATE INDEX idx_pebbles_weight ON pebbles (effective_weight DESC NULLS LAST);
 ```
 
 **Example red-string query** — find all pebbles sharing any value with a given pebble:
@@ -148,19 +212,21 @@ This is the conspiracy board made digital: infinite scale, perfect memory, zero 
 
 ---
 
-### 7. Background Agents Role
+### 8. Background Agents Role
 
 Agents are responsible for:
 - Enriching living fields (`current_relevance`, `decay_factor`, etc.)
 - Keeping the JSONB index in sync
 - Querying red strings for context
 - Suggesting taxonomy extensions when new patterns appear
+- Computing `effective_weight` from explicit weight + implicit signals + decay + pattern signals
+- Detecting cross-pebble weight patterns (hot categories, high-signal tags, thick red strings)
 
 Agents **never** modify the source Markdown files directly. All enrichment is written to the JSONB index only, preserving file sovereignty.
 
 ---
 
-### 8. Field Reference
+### 9. Field Reference
 
 **uku_type** (required)
 - `experience_capture` – raw moment of lived experience
@@ -172,6 +238,9 @@ Agents **never** modify the source Markdown files directly. All enrichment is wr
 **category** (required)
 `foundational | vision | technical | insight | problem`
 
+**weight** (optional)
+Human-assigned importance, 0.0–1.0. Only humans write this field. If omitted, the pebble is unweighted (agents rely on implicit signals only).
+
 **status**
 `draft` (human editing) | `annotated` | `published` | `archived`
 
@@ -179,7 +248,7 @@ Agents **never** modify the source Markdown files directly. All enrichment is wr
 
 ---
 
-### 9. Example Pebble
+### 10. Example Pebble
 
 ```yaml
 ---
@@ -198,6 +267,7 @@ tags:
   - sage
   - byterover
   - interspecies
+weight: 0.85
 status: draft
 ---
 This feels like perfect timing!
@@ -211,3 +281,10 @@ I've been drafting all week...
 - Every other pebble with `uku_type: insight` and `category: vision`
 - Every other pebble tagged `pebbles`, `sage`, `byterover`, or `interspecies`
 - No manual linking required. The wall does the work.
+
+**Weighting in action:**
+- Human assigned `weight: 0.85` — this pebble matters
+- If the human keeps opening it, `access_count` rises in the index
+- If it appears in many red-string results, `reference_count` climbs
+- Agents combine all signals into `effective_weight` — this pebble floats to the top when agents build context
+- If the `vision` category is consistently high-weight, agents boost all vision pebbles slightly (pattern weight)
