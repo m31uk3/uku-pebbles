@@ -15,6 +15,7 @@ Inspired directly by the insight that "the simplest forms of memory work best wi
 - **Schema**: Fluid + lightweight taxonomy (new fields welcome; agents discover patterns)
 - **Indexing Layer**: Postgres + JSONB (single table, single GIN index — classic NoSQL patterns)
 - **Relationships**: Inherent "red strings" — any key-value match across pebbles creates an automatic, on-demand connection (no `related_uku_ids`, no manual tagging)
+- **Weighting**: Explicit human priority in files + implicit behavioral signals (access, updates, references) in the index — some strings are thicker than others
 - **Mental Model**: The classic evidence/conspiracy board — strings appear wherever attributes match
 
 This is the smallest functional system possible: vault + one DB container + tiny watcher. No Neo4j. No extra plugins. No complexity.
