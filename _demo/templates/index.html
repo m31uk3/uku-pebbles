@@ -1,0 +1,215 @@
+{% extends "base.html" %}
+{% block title %}UKU Pebbles — Search{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <h1>UKU Pebbles</h1>
+    <p class="subtitle">Your lived experience, structured and interconnected</p>
+
+    <div class="search-box">
+        <input type="text" id="query-input"
+               placeholder='Try: "show me the important insights I made in the book at the coffee shop two weeks ago"'
+               autocomplete="off">
+        <button id="search-btn">Search</button>
+    </div>
+
+    <div class="example-queries">
+        <span>Try:</span>
+        <button class="example" data-query="show me the important insights I made in the book at the coffee shop two weeks ago">coffee shop insights</button>
+        <button class="example" data-query="highlights about stoicism when I was feeling inspired">inspired stoicism</button>
+        <button class="example" data-query="what did I read at the library last week">library last week</button>
+        <button class="example" data-query="notes with sarah about mindfulness #stoicism">with sarah #stoicism</button>
+        <button class="example" data-query="important reading notes from the park">park reading</button>
+    </div>
+</section>
+
+<section id="query-plan" class="hidden">
+    <h2>Sub-Agent Query Decomposition</h2>
+    <p class="explanation" id="explanation"></p>
+    <div id="plan-cards"></div>
+</section>
+
+<section id="results" class="hidden">
+    <h2>Matching Pebbles <span id="result-count"></span></h2>
+    <div id="result-list"></div>
+</section>
+
+<section id="result-graph" class="hidden">
+    <h2>Knowledge Graph — Red Strings</h2>
+    <div id="mini-graph"></div>
+</section>
+
+<section class="all-pebbles">
+    <h2>All Pebbles ({{ pebbles|length }})</h2>
+    <div class="pebble-grid">
+        {% for p in pebbles %}
+        <a href="/pebble/{{ p.yaml_data.uku_id }}" class="pebble-card">
+            <div class="pebble-type {{ p.yaml_data.uku_type }}">{{ p.yaml_data.uku_type }}</div>
+            <h3>{{ p.yaml_data.title }}</h3>
+            <div class="pebble-meta">
+                {% if p.yaml_data.location and p.yaml_data.location.name %}
+                <span class="meta-item location">{{ p.yaml_data.location.name }}</span>
+                {% endif %}
+                <span class="meta-item date">{{ p.yaml_data.created_at[:10] }}</span>
+                {% if p.yaml_data.weight %}
+                <span class="meta-item weight">weight: {{ p.yaml_data.weight }}</span>
+                {% endif %}
+                {% if p.yaml_data.creator %}
+                <span class="meta-item creator">by {{ p.yaml_data.creator }}</span>
+                {% endif %}
+            </div>
+            <div class="pebble-tags">
+                {% for tag in p.yaml_data.get('tags', [])[:4] %}
+                <span class="tag">{{ tag }}</span>
+                {% endfor %}
+            </div>
+            {% if p.yaml_data.people %}
+            <div class="pebble-people">
+                {% for person in p.yaml_data.people %}
+                <span class="person">{{ person }}</span>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </a>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const queryInput = document.getElementById('query-input');
+const searchBtn = document.getElementById('search-btn');
+const planSection = document.getElementById('query-plan');
+const resultsSection = document.getElementById('results');
+const graphSection = document.getElementById('result-graph');
+
+async function doSearch() {
+    const query = queryInput.value.trim();
+    if (!query) return;
+
+    searchBtn.textContent = 'Searching...';
+    searchBtn.disabled = true;
+
+    try {
+        const res = await fetch('/query', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({query}),
+        });
+        const data = await res.json();
+
+        // Show query plan
+        document.getElementById('explanation').textContent = data.explanation;
+        const planCards = document.getElementById('plan-cards');
+        planCards.innerHTML = data.query_plan.map(sq => `
+            <div class="plan-card">
+                <div class="plan-intent">${sq.intent.replace('_', ' ')}</div>
+                <div class="plan-filters">${Object.entries(sq.filters).map(([k,v]) =>
+                    `<span class="filter-chip">${k.replace('$.','')}: ${v}</span>`
+                ).join('')}</div>
+                <div class="plan-confidence">confidence: ${(sq.confidence * 100).toFixed(0)}%</div>
+            </div>
+        `).join('');
+        planSection.classList.remove('hidden');
+
+        // Show results
+        document.getElementById('result-count').textContent = `(${data.result_count})`;
+        const resultList = document.getElementById('result-list');
+        if (data.results.length === 0) {
+            resultList.innerHTML = '<p class="no-results">No matching pebbles found. Try a broader query.</p>';
+        } else {
+            resultList.innerHTML = data.results.map(r => `
+                <a href="/pebble/${r.uku_id}" class="result-card">
+                    <div class="result-type ${r.yaml.uku_type}">${r.yaml.uku_type}</div>
+                    <h3>${r.title}</h3>
+                    <p class="result-body">${(r.body || '').substring(0, 200)}...</p>
+                    <div class="result-meta">
+                        ${r.yaml.location ? `<span>${r.yaml.location.name || ''}</span>` : ''}
+                        <span>${r.yaml.created_at ? r.yaml.created_at.substring(0, 10) : ''}</span>
+                        ${r.yaml.book_ref ? `<span>${r.yaml.book_ref.book_title}, p.${r.yaml.book_ref.page || '?'}</span>` : ''}
+                        ${r.yaml.weight ? `<span>weight: ${r.yaml.weight}</span>` : ''}
+                    </div>
+                </a>
+            `).join('');
+        }
+        resultsSection.classList.remove('hidden');
+
+        // Show mini graph
+        if (data.graph && data.graph.nodes.length > 0) {
+            graphSection.classList.remove('hidden');
+            renderMiniGraph(data.graph);
+        }
+
+    } catch (err) {
+        console.error(err);
+    } finally {
+        searchBtn.textContent = 'Search';
+        searchBtn.disabled = false;
+    }
+}
+
+searchBtn.addEventListener('click', doSearch);
+queryInput.addEventListener('keydown', e => { if (e.key === 'Enter') doSearch(); });
+
+document.querySelectorAll('.example').forEach(btn => {
+    btn.addEventListener('click', () => {
+        queryInput.value = btn.dataset.query;
+        doSearch();
+    });
+});
+
+function renderMiniGraph(graph) {
+    const container = document.getElementById('mini-graph');
+    container.innerHTML = '';
+    const width = container.clientWidth || 700;
+    const height = 350;
+
+    const svg = d3.select('#mini-graph').append('svg')
+        .attr('width', width).attr('height', height);
+
+    const typeColors = {
+        'experience_capture': '#4a9eff',
+        'insight': '#ff6b6b',
+        'proposed_solution': '#51cf66',
+        'problem_statement': '#ffd43b',
+        'ontology_element': '#cc5de8',
+    };
+
+    const simulation = d3.forceSimulation(graph.nodes)
+        .force('link', d3.forceLink(graph.edges).id(d => d.id).distance(100))
+        .force('charge', d3.forceManyBody().strength(-200))
+        .force('center', d3.forceCenter(width / 2, height / 2));
+
+    const link = svg.selectAll('.link')
+        .data(graph.edges).enter().append('line')
+        .attr('class', 'graph-link')
+        .attr('stroke-width', d => Math.min(d.strength * 1.5, 6));
+
+    const node = svg.selectAll('.node')
+        .data(graph.nodes).enter().append('g')
+        .attr('class', 'graph-node')
+        .call(d3.drag()
+            .on('start', (e, d) => { if (!e.active) simulation.alphaTarget(0.3).restart(); d.fx = d.x; d.fy = d.y; })
+            .on('drag', (e, d) => { d.fx = e.x; d.fy = e.y; })
+            .on('end', (e, d) => { if (!e.active) simulation.alphaTarget(0); d.fx = null; d.fy = null; }));
+
+    node.append('circle')
+        .attr('r', d => 8 + (d.weight || 0.5) * 12)
+        .attr('fill', d => typeColors[d.uku_type] || '#888');
+
+    node.append('text')
+        .attr('dx', 15).attr('dy', 4)
+        .text(d => d.title.length > 30 ? d.title.substring(0, 30) + '...' : d.title)
+        .attr('class', 'graph-label');
+
+    node.on('click', (e, d) => { window.location.href = `/pebble/${d.id}`; });
+
+    simulation.on('tick', () => {
+        link.attr('x1', d => d.source.x).attr('y1', d => d.source.y)
+            .attr('x2', d => d.target.x).attr('y2', d => d.target.y);
+        node.attr('transform', d => `translate(${d.x},${d.y})`);
+    });
+}
+</script>
+{% endblock %}

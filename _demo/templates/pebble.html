@@ -1,0 +1,254 @@
+{% extends "base.html" %}
+{% block title %}{{ pebble.yaml_data.title }} — UKU Pebbles{% endblock %}
+
+{% block content %}
+<div class="pebble-detail">
+    <div class="pebble-header">
+        <span class="pebble-type {{ pebble.yaml_data.uku_type }}">{{ pebble.yaml_data.uku_type }}</span>
+        <span class="pebble-status {{ pebble.yaml_data.status }}">{{ pebble.yaml_data.status }}</span>
+        {% if pebble.yaml_data.weight %}
+        <span class="pebble-weight">weight: {{ pebble.yaml_data.weight }}</span>
+        {% endif %}
+    </div>
+
+    <h1>{{ pebble.yaml_data.title }}</h1>
+
+    <div class="pebble-body">{{ pebble.body_text }}</div>
+
+    <!-- Drill-Down: Book Reference -->
+    {% if pebble.yaml_data.book_ref %}
+    <div class="drill-down">
+        <h3>Book Reference — Drill Down</h3>
+        <div class="book-ref">
+            <div class="book-title">{{ pebble.yaml_data.book_ref.book_title }}
+                {% if pebble.yaml_data.book_ref.author %} by {{ pebble.yaml_data.book_ref.author }}{% endif %}
+            </div>
+            <div class="book-location">
+                {% if pebble.yaml_data.book_ref.chapter %}Chapter: {{ pebble.yaml_data.book_ref.chapter }}{% endif %}
+                {% if pebble.yaml_data.book_ref.page %} | Page: {{ pebble.yaml_data.book_ref.page }}{% endif %}
+                {% if pebble.yaml_data.book_ref.paragraph %} | Paragraph: {{ pebble.yaml_data.book_ref.paragraph }}{% endif %}
+                {% if pebble.yaml_data.book_ref.section %} | Section: {{ pebble.yaml_data.book_ref.section }}{% endif %}
+            </div>
+            {% if pebble.yaml_data.book_ref.isbn %}
+            <div class="book-isbn">ISBN: {{ pebble.yaml_data.book_ref.isbn }}</div>
+            {% endif %}
+            <p class="drill-hint">Full content drill-down: page {{ pebble.yaml_data.book_ref.page or '?' }} &rarr; chapter &rarr; entire book.
+            Each level links back to all pebbles from that chapter/book.</p>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- YAML Metadata -->
+    <div class="yaml-section">
+        <h3>Full YAML Attributes</h3>
+        <table class="yaml-table">
+            {% for key, value in pebble.yaml_data.items() recursive %}
+                {% if value is mapping %}
+                    <tr class="yaml-group"><td colspan="2"><strong>{{ key }}</strong></td></tr>
+                    {% for subkey, subval in value.items() %}
+                    <tr><td class="yaml-key">{{ key }}.{{ subkey }}</td><td class="yaml-val">{{ subval }}</td></tr>
+                    {% endfor %}
+                {% elif value is iterable and value is not string %}
+                    <tr><td class="yaml-key">{{ key }}</td><td class="yaml-val">{{ value | join(', ') }}</td></tr>
+                {% else %}
+                    <tr><td class="yaml-key">{{ key }}</td><td class="yaml-val">{{ value }}</td></tr>
+                {% endif %}
+            {% endfor %}
+        </table>
+    </div>
+
+    <!-- Context Elements -->
+    {% if pebble.yaml_data.context_elements %}
+    <div class="context-section">
+        <h3>Experiential Context</h3>
+        <div class="context-grid">
+            {% if pebble.yaml_data.context_elements.why_captured %}
+            <div class="context-item">
+                <label>Why Captured</label>
+                <p>{{ pebble.yaml_data.context_elements.why_captured }}</p>
+            </div>
+            {% endif %}
+            {% if pebble.yaml_data.context_elements.surrounding_activity %}
+            <div class="context-item">
+                <label>Surrounding Activity</label>
+                <p>{{ pebble.yaml_data.context_elements.surrounding_activity }}</p>
+            </div>
+            {% endif %}
+            {% if pebble.yaml_data.context_elements.emotional_state %}
+            <div class="context-item">
+                <label>Emotional State</label>
+                <p>{{ pebble.yaml_data.context_elements.emotional_state }}</p>
+            </div>
+            {% endif %}
+            {% if pebble.yaml_data.context_elements.intended_next_action %}
+            <div class="context-item">
+                <label>Intended Next Action</label>
+                <p>{{ pebble.yaml_data.context_elements.intended_next_action }}</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Location -->
+    {% if pebble.yaml_data.location %}
+    <div class="location-section">
+        <h3>Location</h3>
+        <p>{{ pebble.yaml_data.location.name or 'Unknown' }}
+        {% if pebble.yaml_data.location.type %} ({{ pebble.yaml_data.location.type }}){% endif %}</p>
+        {% if pebble.yaml_data.location.lat and pebble.yaml_data.location.lon %}
+        <p class="coords">{{ pebble.yaml_data.location.lat }}, {{ pebble.yaml_data.location.lon }}</p>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- People & Consent -->
+    {% if pebble.yaml_data.people %}
+    <div class="people-section">
+        <h3>People Present</h3>
+        <div class="people-list">
+            {% for person in pebble.yaml_data.people %}
+            <a href="/shared/{{ person }}" class="person-badge">{{ person }}</a>
+            {% endfor %}
+        </div>
+        {% if pebble.yaml_data.consent_snapshot %}
+        <p class="consent-info">
+            Consent: {{ pebble.yaml_data.consent_snapshot.consent_type }}
+            ({{ pebble.yaml_data.consent_snapshot.consented_people | join(', ') }})
+            {% if pebble.yaml_data.consent_snapshot.timestamp %}
+            at {{ pebble.yaml_data.consent_snapshot.timestamp }}
+            {% endif %}
+        </p>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Sharing -->
+    {% if pebble.yaml_data.shared_with or pebble.yaml_data.shared_with_groups %}
+    <div class="sharing-section">
+        <h3>Shared With</h3>
+        {% for person in pebble.yaml_data.get('shared_with', []) %}
+        <a href="/shared/{{ person }}" class="share-badge person">{{ person }}</a>
+        {% endfor %}
+        {% for group in pebble.yaml_data.get('shared_with_groups', []) %}
+        <a href="/shared/{{ group }}" class="share-badge group">{{ group }}</a>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Red Strings -->
+    <div class="red-strings-section">
+        <h3>Red Strings — Connected Pebbles ({{ red_strings|length }})</h3>
+        {% if red_strings %}
+        <div class="connection-list">
+            {% for rs in red_strings %}
+            <a href="/pebble/{{ rs.pebble.yaml_data.uku_id }}" class="connection-card">
+                <div class="connection-strength">{{ rs.strength }} connection{{ 's' if rs.strength > 1 else '' }}</div>
+                <h4>{{ rs.pebble.yaml_data.title }}</h4>
+                <div class="connection-details">
+                    {% for conn in rs.connections %}
+                    <span class="red-string-label">{{ conn.path }}: {{ conn.value }}</span>
+                    {% endfor %}
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p>No red string connections found.</p>
+        {% endif %}
+    </div>
+
+    <!-- Ego Graph -->
+    <div class="ego-graph-section">
+        <h3>Ego Graph</h3>
+        <div id="ego-graph"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const graphData = {{ ego_graph | safe }};
+
+function renderEgoGraph(graph) {
+    const container = document.getElementById('ego-graph');
+    const width = container.clientWidth || 800;
+    const height = 450;
+
+    const svg = d3.select('#ego-graph').append('svg')
+        .attr('width', width).attr('height', height);
+
+    const typeColors = {
+        'experience_capture': '#4a9eff',
+        'insight': '#ff6b6b',
+        'proposed_solution': '#51cf66',
+        'problem_statement': '#ffd43b',
+        'ontology_element': '#cc5de8',
+    };
+
+    const simulation = d3.forceSimulation(graph.nodes)
+        .force('link', d3.forceLink(graph.edges).id(d => d.id).distance(120))
+        .force('charge', d3.forceManyBody().strength(-300))
+        .force('center', d3.forceCenter(width / 2, height / 2));
+
+    const link = svg.selectAll('.link')
+        .data(graph.edges).enter().append('line')
+        .attr('class', 'graph-link')
+        .attr('stroke-width', d => Math.min(d.strength * 2, 8))
+        .attr('stroke-opacity', d => d.depth === 1 ? 0.8 : 0.4);
+
+    const node = svg.selectAll('.node')
+        .data(graph.nodes).enter().append('g')
+        .attr('class', 'graph-node')
+        .call(d3.drag()
+            .on('start', (e, d) => { if (!e.active) simulation.alphaTarget(0.3).restart(); d.fx = d.x; d.fy = d.y; })
+            .on('drag', (e, d) => { d.fx = e.x; d.fy = e.y; })
+            .on('end', (e, d) => { if (!e.active) simulation.alphaTarget(0); d.fx = null; d.fy = null; }));
+
+    node.append('circle')
+        .attr('r', d => d.is_center ? 18 : 8 + (d.weight || 0.5) * 10)
+        .attr('fill', d => typeColors[d.uku_type] || '#888')
+        .attr('stroke', d => d.is_center ? '#fff' : 'none')
+        .attr('stroke-width', d => d.is_center ? 3 : 0);
+
+    node.append('text')
+        .attr('dx', 20).attr('dy', 4)
+        .text(d => d.title.length > 35 ? d.title.substring(0, 35) + '...' : d.title)
+        .attr('class', 'graph-label')
+        .attr('font-weight', d => d.is_center ? 'bold' : 'normal');
+
+    node.on('click', (e, d) => {
+        if (!d.is_center) window.location.href = `/pebble/${d.id}`;
+    });
+
+    // Add edge labels on hover
+    const edgeLabels = svg.selectAll('.edge-label')
+        .data(graph.edges).enter().append('text')
+        .attr('class', 'edge-label')
+        .text(d => d.labels.slice(0, 2).join(', '))
+        .attr('font-size', '9px')
+        .attr('fill', '#999')
+        .attr('opacity', 0);
+
+    link.on('mouseover', function(e, d) {
+        d3.select(this).attr('stroke', '#ff6b6b');
+        edgeLabels.filter(el => el === d).attr('opacity', 1);
+    }).on('mouseout', function(e, d) {
+        d3.select(this).attr('stroke', '#c44');
+        edgeLabels.filter(el => el === d).attr('opacity', 0);
+    });
+
+    simulation.on('tick', () => {
+        link.attr('x1', d => d.source.x).attr('y1', d => d.source.y)
+            .attr('x2', d => d.target.x).attr('y2', d => d.target.y);
+        node.attr('transform', d => `translate(${d.x},${d.y})`);
+        edgeLabels.attr('x', d => (d.source.x + d.target.x) / 2)
+                  .attr('y', d => (d.source.y + d.target.y) / 2);
+    });
+}
+
+if (graphData.nodes.length > 0) {
+    renderEgoGraph(graphData);
+}
+</script>
+{% endblock %}

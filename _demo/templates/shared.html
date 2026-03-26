@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% block title %}{{ entity }}'s Pebbles — UKU Pebbles{% endblock %}
+
+{% block content %}
+<section class="shared-page">
+    <h1>Hive Mind View: {{ entity }}</h1>
+    <p>Aggregated pebbles shared with or created by <strong>{{ entity }}</strong>.
+    This demonstrates how pebbles converge across people, groups, and organizations.</p>
+
+    <div class="shared-stats">
+        <div class="stat">
+            <span class="stat-number">{{ pebbles|length }}</span>
+            <span class="stat-label">Pebbles</span>
+        </div>
+        <div class="stat">
+            {% set creators = pebbles | map(attribute='yaml_data') | map(attribute='creator') | select('defined') | unique | list %}
+            <span class="stat-number">{{ creators|length }}</span>
+            <span class="stat-label">Contributors</span>
+        </div>
+        <div class="stat">
+            {% set all_tags = [] %}
+            {% for p in pebbles %}
+                {% for t in p.yaml_data.get('tags', []) %}
+                    {% if t not in all_tags %}{% if all_tags.append(t) %}{% endif %}{% endif %}
+                {% endfor %}
+            {% endfor %}
+            <span class="stat-number">{{ all_tags|length }}</span>
+            <span class="stat-label">Unique Tags</span>
+        </div>
+    </div>
+
+    <h2>Knowledge Graph</h2>
+    <div id="shared-graph"></div>
+
+    <h2>Pebbles</h2>
+    <div class="pebble-grid">
+        {% for p in pebbles %}
+        <a href="/pebble/{{ p.yaml_data.uku_id }}" class="pebble-card">
+            <div class="pebble-type {{ p.yaml_data.uku_type }}">{{ p.yaml_data.uku_type }}</div>
+            <h3>{{ p.yaml_data.title }}</h3>
+            <div class="pebble-meta">
+                {% if p.yaml_data.creator %}
+                <span class="meta-item creator">by {{ p.yaml_data.creator }}</span>
+                {% endif %}
+                <span class="meta-item date">{{ p.yaml_data.created_at[:10] }}</span>
+                {% if p.yaml_data.location and p.yaml_data.location.name %}
+                <span class="meta-item location">{{ p.yaml_data.location.name }}</span>
+                {% endif %}
+            </div>
+            <div class="pebble-tags">
+                {% for tag in p.yaml_data.get('tags', [])[:4] %}
+                <span class="tag">{{ tag }}</span>
+                {% endfor %}
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const graphData = {{ graph | safe }};
+
+(function() {
+    const container = document.getElementById('shared-graph');
+    const width = container.clientWidth || 800;
+    const height = 400;
+
+    const svg = d3.select('#shared-graph').append('svg')
+        .attr('width', width).attr('height', height);
+
+    const g = svg.append('g');
+    svg.call(d3.zoom().scaleExtent([0.3, 4]).on('zoom', (e) => g.attr('transform', e.transform)));
+
+    const typeColors = {
+        'experience_capture': '#4a9eff',
+        'insight': '#ff6b6b',
+        'proposed_solution': '#51cf66',
+        'problem_statement': '#ffd43b',
+    };
+
+    const simulation = d3.forceSimulation(graphData.nodes)
+        .force('link', d3.forceLink(graphData.edges).id(d => d.id).distance(120))
+        .force('charge', d3.forceManyBody().strength(-300))
+        .force('center', d3.forceCenter(width / 2, height / 2));
+
+    const link = g.selectAll('.link')
+        .data(graphData.edges).enter().append('line')
+        .attr('class', 'graph-link')
+        .attr('stroke-width', d => Math.min(d.strength * 2, 8));
+
+    const node = g.selectAll('.node')
+        .data(graphData.nodes).enter().append('g')
+        .attr('class', 'graph-node')
+        .call(d3.drag()
+            .on('start', (e, d) => { if (!e.active) simulation.alphaTarget(0.3).restart(); d.fx = d.x; d.fy = d.y; })
+            .on('drag', (e, d) => { d.fx = e.x; d.fy = e.y; })
+            .on('end', (e, d) => { if (!e.active) simulation.alphaTarget(0); d.fx = null; d.fy = null; }));
+
+    node.append('circle')
+        .attr('r', d => 10 + (d.weight || 0.5) * 12)
+        .attr('fill', d => typeColors[d.uku_type] || '#888');
+
+    node.append('text')
+        .attr('dx', 18).attr('dy', 4)
+        .text(d => d.title.length > 35 ? d.title.substring(0, 35) + '...' : d.title)
+        .attr('class', 'graph-label');
+
+    node.on('click', (e, d) => { window.location.href = `/pebble/${d.id}`; });
+
+    simulation.on('tick', () => {
+        link.attr('x1', d => d.source.x).attr('y1', d => d.source.y)
+            .attr('x2', d => d.target.x).attr('y2', d => d.target.y);
+        node.attr('transform', d => `translate(${d.x},${d.y})`);
+    });
+})();
+</script>
+{% endblock %}

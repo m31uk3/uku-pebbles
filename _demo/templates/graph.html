@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block title %}Knowledge Graph — UKU Pebbles{% endblock %}
+
+{% block content %}
+<section class="graph-page">
+    <h1>Knowledge Graph — All Red Strings</h1>
+    <p>Every line is an automatic connection: matching YAML attributes between pebbles.
+    Thicker lines = more shared attributes. Click any node to drill down.</p>
+
+    <div class="legend">
+        <span class="legend-item"><span class="dot" style="background:#4a9eff"></span> Experience Capture</span>
+        <span class="legend-item"><span class="dot" style="background:#ff6b6b"></span> Insight</span>
+        <span class="legend-item"><span class="dot" style="background:#51cf66"></span> Proposed Solution</span>
+        <span class="legend-item"><span class="dot" style="background:#ffd43b"></span> Problem Statement</span>
+    </div>
+
+    <div id="full-graph"></div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const graphData = {{ graph | safe }};
+
+(function() {
+    const container = document.getElementById('full-graph');
+    const width = container.clientWidth || 1000;
+    const height = 600;
+
+    const svg = d3.select('#full-graph').append('svg')
+        .attr('width', width).attr('height', height);
+
+    // Zoom support
+    const g = svg.append('g');
+    svg.call(d3.zoom().scaleExtent([0.3, 4]).on('zoom', (e) => {
+        g.attr('transform', e.transform);
+    }));
+
+    const typeColors = {
+        'experience_capture': '#4a9eff',
+        'insight': '#ff6b6b',
+        'proposed_solution': '#51cf66',
+        'problem_statement': '#ffd43b',
+        'ontology_element': '#cc5de8',
+    };
+
+    const simulation = d3.forceSimulation(graphData.nodes)
+        .force('link', d3.forceLink(graphData.edges).id(d => d.id).distance(140))
+        .force('charge', d3.forceManyBody().strength(-400))
+        .force('center', d3.forceCenter(width / 2, height / 2))
+        .force('collision', d3.forceCollide().radius(40));
+
+    const link = g.selectAll('.link')
+        .data(graphData.edges).enter().append('line')
+        .attr('class', 'graph-link')
+        .attr('stroke-width', d => Math.min(d.strength * 2, 10));
+
+    // Edge labels
+    const edgeLabel = g.selectAll('.edge-label')
+        .data(graphData.edges).enter().append('text')
+        .attr('class', 'edge-label')
+        .text(d => d.labels.slice(0, 3).join(', '))
+        .attr('font-size', '8px')
+        .attr('fill', '#888')
+        .attr('text-anchor', 'middle')
+        .attr('opacity', 0);
+
+    const node = g.selectAll('.node')
+        .data(graphData.nodes).enter().append('g')
+        .attr('class', 'graph-node')
+        .attr('cursor', 'pointer')
+        .call(d3.drag()
+            .on('start', (e, d) => { if (!e.active) simulation.alphaTarget(0.3).restart(); d.fx = d.x; d.fy = d.y; })
+            .on('drag', (e, d) => { d.fx = e.x; d.fy = e.y; })
+            .on('end', (e, d) => { if (!e.active) simulation.alphaTarget(0); d.fx = null; d.fy = null; }));
+
+    node.append('circle')
+        .attr('r', d => 10 + (d.weight || 0.5) * 14)
+        .attr('fill', d => typeColors[d.uku_type] || '#888')
+        .attr('stroke', '#222')
+        .attr('stroke-width', 1.5);
+
+    node.append('text')
+        .attr('dx', 22).attr('dy', 5)
+        .text(d => d.title.length > 40 ? d.title.substring(0, 40) + '...' : d.title)
+        .attr('class', 'graph-label');
+
+    // Tooltip on hover
+    node.on('mouseover', function(e, d) {
+        d3.select(this).select('circle').attr('stroke', '#fff').attr('stroke-width', 3);
+        // Show connected edge labels
+        edgeLabel.attr('opacity', el =>
+            (el.source.id || el.source) === d.id || (el.target.id || el.target) === d.id ? 1 : 0
+        );
+    }).on('mouseout', function(e, d) {
+        d3.select(this).select('circle').attr('stroke', '#222').attr('stroke-width', 1.5);
+        edgeLabel.attr('opacity', 0);
+    });
+
+    node.on('click', (e, d) => {
+        window.location.href = `/pebble/${d.id}`;
+    });
+
+    simulation.on('tick', () => {
+        link.attr('x1', d => d.source.x).attr('y1', d => d.source.y)
+            .attr('x2', d => d.target.x).attr('y2', d => d.target.y);
+        node.attr('transform', d => `translate(${d.x},${d.y})`);
+        edgeLabel.attr('x', d => (d.source.x + d.target.x) / 2)
+                 .attr('y', d => (d.source.y + d.target.y) / 2);
+    });
+})();
+</script>
+{% endblock %}
