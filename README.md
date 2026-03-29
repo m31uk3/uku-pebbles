@@ -1,42 +1,94 @@
-# UKU-Pebbles
+# Pebbles
 
-**Universal Knowledge Units (UKUs) — Pebbles**
-Sovereign, human-first memory units for interspecies collaboration.
+**The AGENTS.md for knowledge work.**
+
+I believe there's an overlooked yet powerful primitive for capturing human memories. By adding YAML frontmatter (metadata) to the top of Markdown files, we can encode any action's intent (ontology) and significance (meaning) inside a single atomic **Universal Knowledge Unit (UKU)** — a *Pebble*.
+
+Connect pebbles that share matching metadata and you can reconstruct your lived experiences with zero LLM calls — just basic similarity search.
 
 ## The Vision
 
-Pebbles turn every capture (screenshot, note, tweet, photo, idea) into an atomic **Universal Knowledge Unit (UKU)** — a Markdown file with rich **YAML frontmatter** that records *what* happened *and* the lived context (emotional state, surrounding activity, intent, categories, etc.).
+Pebbles is a schema specification for universal knowledge. By weaving pebbles into your everyday tools (web browser, smartphone, notes app, etc.), every "moment" — screenshot, note, tweet, photo, idea — becomes its own atomic UKU.
 
-Inspired directly by the insight that "the simplest forms of memory work best with current LLMs" (Obsidian vaults + metadata for multi-dimensional search), Pebbles are the conspiracy board made real: every pebble is a note on the wall, and **every matching YAML key-value pair is an automatic red string**.
+Each pebble is unique to its moment. It captures not only *what happened* but the lived experiential context: emotional state, surrounding activity, and intent.
 
-## v2.1 Architecture (Minimal & Optimal)
+A pebble is not the artifact itself — it's a **structured description** that makes any artifact discoverable and associable. Just as AGENTS.md describes a codebase to an agent, a pebble adds the lived experiential context for the artifact it wraps. The body text is a human/agent-written summary. The frontmatter is the experiential index.
 
-- **Source of Truth**: Plain Markdown + YAML files (sovereign, human-editable in Obsidian, Git versioned — forever)
-- **Schema**: Fluid + lightweight taxonomy (new fields welcome; agents discover patterns)
-- **Indexing Layer**: Postgres + JSONB (single table, single GIN index — classic NoSQL patterns)
-- **Relationships**: Inherent "red strings" — any key-value match across pebbles creates an automatic, on-demand connection (no `related_uku_ids`, no manual tagging)
-- **Weighting**: Explicit human priority in files + implicit behavioral signals (access, updates, references) in the index — some strings are thicker than others
-- **Mental Model**: The classic evidence/conspiracy board — strings appear wherever attributes match
+Inspired by the insight that "the simplest forms of memory work best," Pebble Piles are the digital equivalent of an evidence board. Every pebble is an item pinned to the wall; every matching YAML key-value pair is a string connecting them.
 
-This is the smallest functional system possible: vault + one DB container + tiny watcher. No Neo4j. No extra plugins. No complexity.
+## Architecture
 
-Full specification: [`_specs/uku-pebbles.spec.md`](./_specs/uku-pebbles.spec.md)
+Four clearly bounded layers:
 
-## Quick Start
+```
+  Ingestion ─── Deterministic extraction. Zero LLM.
+      │         Parse YAML, normalize, write to index.
+      ▼
+  Curation ──── Actor-agnostic (human or agent, RBAC-governed).
+      │         Create edges, consolidate, build higher-order structures.
+      ▼
+  Query ──────── Pure deterministic retrieval. Red strings + optional edge traversal.
+      │          No LLM. No embeddings. Just SQL.
+      ▼
+  Inference ──── Optional. Separate process. Receives structured results only.
+                 LLM reasoning, synthesis, suggestions.
+```
 
-1. Clone the repo and open the vault in Obsidian.
-2. Capture pebbles as normal Markdown + YAML.
-3. Run the tiny Postgres watcher — instant indexing and automatic red strings.
+Layers 1–3 are **compile-time LLM-free**. The boundary between deterministic core and inference is the single most important architectural contract.
 
-Built in public for the interspecies-memory community.
+### Relationships
+
+- **Red strings** — Implicit, symmetric connections from matching YAML key-value pairs. Powered by JSONB + GIN index. Sub-millisecond compound faceted search.
+- **Typed edges** (optional, additive) — Explicit, directional relationships in a lightweight table. Created only during curation. Enables consolidation hierarchy (L0 raw → L1 consolidations → L2 Maps of Content → L3+ meta-syntheses).
+
+The system works fully with red strings alone. Typed edges are a progressive enhancement that never breaks core functionality.
+
+### Ingestion Contract
+
+| Tier | Source | Friction | Examples |
+|------|--------|----------|----------|
+| 1 | Auto-captured from device/browser | Zero | timestamp, device, GPS, active_url, file_ref, content_hash |
+| 2 | Human moment (mini-tweet + quick-tag) | 3–5 seconds | intent, emotional_state, people, tags |
+| 3 | Inferred without LLM | Zero | venue_type from GPS, source_type from file extension |
+| 4 | LLM-assisted inference (async) | Zero | Optimal attribute assignment using payload + existing index |
+
+### Storage
+
+- **Source of truth**: Plain Markdown + YAML files (sovereign, human-editable, Git versioned)
+- **Index**: Postgres + JSONB (single table, single GIN index)
+- **Edges**: Optional lightweight table for typed relationships
+- **Implementation notes**: Full JSONB + GIN feasibility documented in the spec (WIP)
+
+## v1 Scope
+
+**Capture surfaces:**
+- **Chrome extension** — Explicit capture on button click / hotkey. Defuddle-quality content extraction. Quick-tag overlay for the "pebble moment."
+- **System-level screenshot override** — Replaces OS default. Auto-generates pebble with Tier 1–3 frontmatter.
+
+**Discovery surfaces:**
+- **Obsidian vault** — Pebbles appear as `.md` files with full frontmatter. Native integration.
+- **Pebbles dashboard** — Web-based graph view served by the daemon. Red strings visualized as connections. Filterable by any attribute.
+
+**Capture UX** — Three modes (user preference):
+1. **Silent** — System captures what it can. No UI.
+2. **Minimal** — 3 inputs + emoticon picker + location dropdown. Seconds, not minutes.
+3. **Full** — All available values surfaced for review/edit.
+
+Collapsible drill-down — start at your level, go deeper when desired.
+
+*Download our beta client for Google Chrome and start pebble-piling today.*
+
+## Full Specification
+
+[`_specs/uku-pebbles.spec.md`](./_specs/uku-pebbles.spec.md)
 
 ## Repository Structure
 
 ```
-├── _specs/          # UKU schema specification (v2.1)
+├── _specs/          # UKU schema specification (v2.3)
 ├── _discussions/    # Raw origin conversations (unedited)
 ├── _insights/       # Synthesis and analysis
-├── _research/       # Architecture and component research
+├── _research/       # Architecture, design research, PDD artifacts
 └── README.md
 ```
 
