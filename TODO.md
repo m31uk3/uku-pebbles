@@ -1,116 +1,214 @@
 # TODO
 
-## Spec (v0.2)
+**Status**: Phase 0 (schema finalization) complete with spec v0.3.0-draft at `_specs/pebbles.spec.md`. Phase 1 (TypeScript reference implementation) is the next major push. For full context, see `.sop/cold-start.md`. For what changed in v0.3, see the spec changelog.
 
-- [ ] Formal JSON Schema + validation library for UKU YAML binding
-- [ ] TOML and JSON serialization bindings
-- [ ] Define full `uku_type` taxonomy with community input
-- [ ] Embedded vector spec for local semantic search
-- [ ] MCP standard payload definition for agent interop
-- [ ] Specify `interspecies_cache` scoring algorithm and update lifecycle
-- [ ] Define `decay_factor` semantics — who sets it, how it's recalculated, what triggers archival
-- [ ] Add `content_hash` (SHA-256) as required header field — enables SAGE dedup validator and content integrity
-- [ ] Add `clearance_level` field (0–4) — operationalizes sovereignty principle, mirrors SAGE's privacy tiers
-- [ ] Add `domain_tag` field — enables SAGE domain-based access control and PoE expertise scoring
-- [ ] Add missing fields from Pebble Schema Spec: `people`, `tools`, `tasks`, `location`, `media_refs`, `extraction_provenance`, `consent_snapshot`, `source_app`
-- [ ] Port validation rules from Pebble Schema Spec — per-field type constraints, array caps, string length limits
-- [ ] Add unknown field preservation rule — clients must round-trip unknown YAML keys without data loss
-- [ ] Define conformance levels: Level 1 (Reader), Level 2 (Writer), Level 3 (Full)
-- [ ] Define schema versioning — semver rules, compatibility matrix, migration determinism
-- [ ] Define per-field size limits and composite UKU size budget
-- [ ] Define enum extensibility rule — clients must preserve unknown enum values
+---
 
-## Integration
+## Phase 1 — Core CLI + Schema Validator
 
-- [ ] SAGE validator wiring — define the UKU commit/consensus flow
-- [ ] ByteRover `.brv/context-tree` mapping — confirm field-level compatibility
-- [ ] Obsidian plugin for native UKU creation and browsing
-- [ ] One-click importer for Twitter/X archive (enrichment script exists in ai-pebbles)
-- [ ] Chrome extension capture surface (carried from ai-pebbles v0 plan)
-- [ ] Reconcile `uku_type` with SAGE `memory_type` — define bidirectional mapping (experience_capture/insight/problem_statement/proposed_solution/ontology_element vs fact/observation/inference/task)
-- [ ] Define UKU-to-SAGE submission pipeline — UKU YAML → MCP `sage_remember` → consensus → enriched UKU writeback
-- [ ] Specify SAGE agent_perspective writeback — how consensus results (validator rationales, PoE weights) flow back into `interspecies_cache.agent_perspective`
-- [ ] Upgrade `related_uku_ids` to typed links — align with SAGE `memory_links` (link_type, direction) and `knowledge_triples` (subject/predicate/object)
-- [ ] Map UKU `status` lifecycle (draft→published) to SAGE `status` lifecycle (proposed→committed) — define handoff points
-- [ ] Determine writeback model — does SAGE enrichment modify the original UKU `.md` in-place or create a new enriched version?
-- [ ] Reconcile UKU consent model with SAGE's existing access grants (per-domain, per-clearance, with expiry)
-- [ ] Chrome extension interaction model with SAGE's existing Chrome extension — integrate vs. standalone
+The first reference implementation. Single TypeScript monorepo with `packages/{schema, core, cli}`. Postgres indexer is Phase 2.
 
-## Schema Integrity
+### Foundation
+- [ ] Bun (or pnpm) workspaces monorepo scaffold
+- [ ] TypeScript build / lint / test setup
+- [ ] ULID library integration (`ulid` or `ulidx`)
 
-- [ ] Audit all fields against tidy data invariant (no composite strings, every value atomic)
-- [ ] Define ontological object type registry: UKU, Person, Tag, Tool, Location, Narrative
-- [ ] Define typed link vocabulary with direction, cardinality, provenance — adopt K-DAG edge taxonomy (supports, contradicts, qualifies, supersedes, breadcrumb_next, part_of, derived_from, tension, gap)
-- [ ] Confidence score calibration — thresholds per signal type
-- [ ] Consent model: per-field gating for `interspecies_cache` and `context_elements`
-- [ ] Fix tidy data violation in `context_elements.emotional_state` — currently composite prose, needs atomic decomposition (align with ai-pebbles CBT emotion vocabulary using `{value, confidence, provenance}` triples)
-- [ ] Atomize `context_elements.intent` — replace prose with typed enum: `remember`, `act_on`, `share`, `think_about`
-- [ ] Atomize `context_elements.emotional_state` — replace prose with typed enum from Ekman's 8 basic emotions
-- [ ] Define knowledge triple extraction from UKU body content — maps to SAGE `knowledge_triples` (subject/predicate/object RDF-style)
-- [ ] Define field-level read/write permissions — which fields are human-only, agent-writable, system-computed
-- [ ] Define action type registry: capture, tag, link, archive, merge, agent_converge, consent_withdraw
-- [ ] Define shared property set reused across object types: confidence, provenance, created_at, updated_at
-- [ ] Define ontological extension mechanism — how third parties extend the UKU schema with new types and fields
+### `packages/schema` — schema validator
+- [ ] Formal JSON Schema or Zod definition of v0.3 YAML binding
+- [ ] Per-field type constraints, array caps, string length limits
+- [ ] Unknown field preservation on round-trip (per spec §12.3)
+- [ ] Temporal field rule enforcement — full ISO 8601 with timezone required, date-only rejected (§5.1)
+- [ ] (label, uid) cross-reference shape validation (§5.2)
+- [ ] Tidy data invariant audit (no composite strings; every value atomic)
+
+### `packages/core` — `.pebble` container + parsers
+- [ ] EPUB-style zip reader/writer for `.pebble`
+- [ ] `pebble.yaml` manifest format
+- [ ] `body.md` extraction
+- [ ] `artifact/` payload handling
+- [ ] `mimetype` prefix file
+- [ ] `pebble.md` (Tier 1) Markdown + YAML parser/writer
+
+### `packages/cli` — pebble CLI
+- [ ] `pebble create <artifact>` — wrap any file as a pebble
+- [ ] `pebble create --note "text"` — pure text pebble
+- [ ] `pebble validate <pebble>` — schema check
+- [ ] `pebble link A B --type derived_from` — typed edge
+- [ ] `pebble export <pebble> --native` — Tier 3 sidecar/XMP export
+- [ ] CLI framework (commander.js or oclif)
+- [ ] Programmatic API surface for agents (same operations)
+
+### Phase 1 architecture deliverables
+- [ ] `_specs/ARCHITECTURE.md` — implementation notes for Q5 (CLI direct, no daemon for v0.1) and Q8 (monorepo structure), plus layer-based conformance examples
+- [ ] C4 L1 Context diagram (Mermaid `C4Context`) — canonical "what is Pebbles" artifact for the README
+- [ ] C4 L2 Container diagram for v0.1 reference impl (Mermaid `C4Container`)
+
+---
+
+## Phase 1.5 — Spec follow-ups (parallel with Phase 1)
+
+- [ ] Define ontology pebble body format — candidates: YAML-LD, JSON-LD, Mermaid graph. Needed before Phase 1 ontology work.
+- [ ] Update synthesis doc 02 (`.sop/synthesis/02-convergence-analysis.md`) to reframe SAGE+ByteRover as integration patterns (Appendix G), not core triad components
+- [ ] Update synthesis doc 11 (`.sop/synthesis/11-final-converged-synthesis.md`) similarly
+- [ ] Add the remaining ai-pebbles parity fields to spec: `people`, `tools`, `tasks`, `media_refs`, `extraction_provenance`, `consent_snapshot`
+- [ ] Define per-field size limits and composite pebble size budget
 - [ ] Define `extraction_provenance` model — per-field ML tracking with source enum (user, ml, error, timeout, skipped)
-- [ ] Define `consent_snapshot` semantics — immutable consent state at capture time, per-field sensitivity levels, default values (high-sensitivity = OFF)
-- [ ] Define location precision levels as schema concept: Precise / Neighborhood / City / None
-- [ ] Define sharing redaction rules — what gets stripped when a UKU is exported or shared
 
-## Community & Adoption
+---
 
-- [ ] Publish spec v0.1 announcement (X thread, dev communities)
-- [ ] Create CONTRIBUTING.md with schema extension guidelines
-- [ ] Example UKUs — curated set showing each `uku_type` in practice, including student and corporate employee scenarios
-- [ ] Validator CLI — command-line tool to check a `.md` file against the spec
-- [ ] Reference implementation — minimal Python/TS library for reading/writing UKUs
-- [ ] Conformance test suite — Level 1/2/3 test fixtures for implementers
+## Phase 2 — Postgres JSONB Indexer + Red-String Query Engine
 
-## Research (Carried from ai-pebbles)
+The interference-immune retrieval layer. Demo target: import 10–20 real pebbles from existing Obsidian clippings, run red-string queries.
 
-- [ ] Agent system design — how agents read, write, and propose UKU changes
-- [ ] NAI inference engine — on-device context DAG for capture-time enrichment
-- [ ] Bidirectional context engine — forward (suggestion) is UKU/NAI; backward (recall) is ByteRover
-- [ ] "Human in the mesh" concept — consent as standing policy, not per-action gate
-- [ ] Map each UKU field to mesh presence — which fields make the human visible to agents (passive read vs active trigger)
+- [ ] `packages/indexer` package
+- [ ] Postgres schema migration from spec §9 (`pebbles` table + GIN index + optional `edges` table)
+- [ ] JSONB ingest from pebble files
+- [ ] Red-string query engine (compound faceted search via `@>` operator on JSONB)
+- [ ] Query DSL: `?who[X]:attribute`, `?when[event:Y]`, `?after[date:Z]`
+- [ ] CLI integration: `pebble query "..."`
+- [ ] Bulk import: `pebble import <directory>` indexes a folder of `pebble.md` and `.pebble` files
+- [ ] Edges table + recursive CTE traversal for typed-edge queries
+- [ ] Level derivation from edge topology (per §9.1) at query time
+- [ ] Behavioral signal tracking (`access_count`, `reference_count`, `last_accessed_at`)
+- [ ] Direct CLI → Postgres connection (no daemon for v0.1, per Q5 ratification)
 
-## Platform Context Research
+---
 
-- [ ] Android: AppFunctions API gating — can third-party apps call `AppFunctionManager.executeAppFunction()` or is it Gemini-only?
-- [ ] Android: Map AppFunction-enabled app categories to NAI DAG signals (calendar→temporal, notes→narrative, music→sensory, tasks→intent, email→activity)
-- [ ] iOS: Audit equivalents — SiriKit/App Intents, NSUserActivity, Shortcuts, MPNowPlayingInfoCenter, EventKit/Reminders
-- [ ] iOS: Identify platform parity gap — which Android AppFunctions signals iOS cannot provide
-- [ ] Chrome: Current extension context capabilities (tabs, history, bookmarks, Media Session API, cross-extension messaging limitations)
-- [ ] Chrome: Track WebMCP (Chrome 146+) — browser equivalent of AppFunctions for structured agent-website interaction
-- [ ] Desktop: macOS accessibility APIs, NSWorkspace, MRMediaRemoteGetNowPlayingInfo
-- [ ] Desktop: Windows UI Automation API, SystemMediaTransportControls
-- [ ] Define abstract `app_context` node interface for the NAI DAG: current_media, current_calendar_event, active_task, recent_note, active_app
-- [ ] Per-signal confidence scoring based on platform mechanism quality (AppFunctions typed return = high; Accessibility scraping = lower; absent = null)
-- [ ] Per-field consent gating of app_context signals per platform
+## Phase 3 — Browser Surface (separate repos, after Phases 1–2)
 
-## Performance
+### `pebble-extract` (fork of `/Users/ljack/github/defuddle`)
+- [ ] Fork defuddle to a separate repo at `pebble-extract`
+- [ ] Add `src/pebbles/` module (types, generator, attributes, middleware)
+- [ ] Hook into `src/node.ts` for YAML injection
+- [ ] Tier 3 inference (venue_type from URL, source_type from extractor type)
+- [ ] Schema validation against Pebbles spec
+- [ ] Upstream-friendly module separation, easy rebase
 
-- [ ] Define latency budgets per capture step: DOM read, context collection, NAI inference, write, UI feedback (<200ms p50, <500ms p99)
-- [ ] Define enrichment latency budget: metadata extraction (<1s p50, <3s p99)
-- [ ] Account for SAGE consensus latency in the end-to-end pipeline budget
-- [ ] Benchmark targets for the Chrome extension: popup render, capture-to-saved, search response
+### `pebble-clipper` (fork of `/Users/ljack/github/obsidian-clipper`)
+- [ ] Fork obsidian-clipper to a separate repo at `pebble-clipper`
+- [ ] Add Pebbles property types to `property-types-manager.ts`
+- [ ] Update `createDefaultTemplate()` with v0.3 fields
+- [ ] Tier 2 input UI (emotion picker, intent dropdown, modality toggle)
+- [ ] Property compilation hook for validation
+- [ ] Cross-browser builds (Chrome, Firefox, Safari)
+
+**Demo target**: Clip a web page from Chrome, see the Pebbles YAML frontmatter populated automatically + ask user for `emotional_state`, `intent`, and `modality` in the popup.
+
+---
+
+## Phase 4 — Eval Framework on LoCoMo
+
+**Critical**: keep this in a SEPARATE repo from the commercial CLI because LoCoMo is CC BY-NC 4.0.
+
+- [ ] Create separate `pebble-eval` repo (CC BY-NC isolation)
+- [ ] Annotate 10–20% of LoCoMo QAs (~200 pairs) with red-string templates
+- [ ] Build minimal red-string query evaluator in Python (LoCoMo is Python-native)
+- [ ] Convert LoCoMo observations to v0.3 pebbles with structured frontmatter
+- [ ] 3-way comparison: semantic vs structured (red strings) vs hybrid
+- [ ] Per-category breakdown (single-hop, multi-hop, temporal, adversarial, open-domain)
+- [ ] **Hypothesis to test**: structured red-string matching ≥85% accuracy on multi-hop QA in <500 tokens vs ~20k tokens for full context
+
+If the hypothesis holds, write up as "Structured Metadata Matching Beats Semantic Retrieval on Long-Term Conversational Memory" — workshop paper, marketing wedge.
+
+---
+
+## Phase 5 — ByteRover Integration (optional, post-Phase-4)
+
+Now explicitly optional per Q13 ratification (SAGE and ByteRover removed from core spec, relocated to non-normative Appendix G).
+
+- [ ] Pebbles Query layer (Phase 2) exposes red-string results in a format ByteRover's RRF can consume (top-K with scores)
+- [ ] Optional: Pebbles MCP tool for ByteRover's Memory Swarm
+- [ ] Document the integration as one retrieval method in a swarm
+
+This is intentionally minimal because Pebbles is the blueprint, not the product. The community can implement additional integrations directly.
+
+---
+
+## Phase 6 — Community & Adoption (parallel with everything)
+
+- [ ] Publish spec v0.3 announcement (X thread, dev communities)
+- [ ] Create `CONTRIBUTING.md` with extension guidelines
+- [ ] Example pebbles — curated set showing each `pebble_type` × `memory_kind` × `modality` combination
+- [ ] Conformance test suite (layer-based per §3) — fixtures for each implementable layer
+- [ ] Validator badge for sites/tools that emit valid pebbles
+- [ ] Reference implementations in additional languages (Python, Go, Rust as community contributions)
+
+---
+
+## Deferred to post-v1
+
+### Weighting model rewrite (§7)
+See `.sop/synthesis/15-weight-field-citation-research.md`. §7 is unchanged in v0.3.0-draft pending citation research re-verification with network access.
+
+- [ ] Re-run weight-failure-mode citation research with WebSearch enabled (the original session was offline-only)
+- [ ] Apply Option (c): downgrade `weight` to optional-legacy, elevate behavioral signals + graph centrality as default surface
+- [ ] Add `salience_hint` categorical field (`pin | flag | none`) as a binary capture-moment marker
+- [ ] Define pattern-weight detection logic (likely personalized PageRank on the edges table)
+
+### Privacy & consent (port from ai-pebbles doc 16)
+- [ ] Trust thresholds, capture filtering, sharing redaction, App Store privacy labels
+- [ ] Define `consent_snapshot` semantics — immutable consent state at capture time, per-field sensitivity levels, default-OFF for high-sensitivity
+- [ ] Define location precision levels as schema concept (Precise / Neighborhood / City / None)
+- [ ] Define sharing redaction rules — what gets stripped on export
+- [ ] Per-field consent gating
+
+### Performance budgets
+- [ ] Latency budgets per capture step (DOM read, context collection, write, UI feedback) — target <200ms p50, <500ms p99
+- [ ] Enrichment latency budget — target <1s p50, <3s p99
+- [ ] Chrome extension benchmarks (popup render, capture-to-saved, search response)
 - [ ] Study Excalidraw 7-layer compound optimization and McMaster-Carr techniques for capture flow applicability
 
-## Capture UX
+### Procedural pebble body format
+- [ ] Define structured step-sequence body format for `memory_kind: procedural` pebbles (recipes, runbooks, workflows)
 
+### Capture UX
 - [ ] Onboarding/activation flow for target demographics (student, corporate employee)
 - [ ] Time-to-first-value target for Chrome extension
 - [ ] Capture UX parity matrix: Chrome popup/sidebar vs iOS share sheet vs Android
-- [ ] Two-phase capture model spec: Phase 1 (fast write, minimal metadata) → Phase 2 (async enrichment)
-- [ ] Pre-attentive attribute guidelines for metadata suggestion display (auto-populate / suggest / discard thresholds)
+- [ ] Two-phase capture model: Phase 1 (fast write, minimal metadata) → Phase 2 (async enrichment)
+- [ ] Pre-attentive attribute guidelines for metadata suggestion display
+
+---
+
+## Platform Context Research (long-term)
+
+- [ ] Android: AppFunctions API gating — can third-party apps call `AppFunctionManager.executeAppFunction()` or is it Gemini-only?
+- [ ] Android: Map AppFunction-enabled app categories to capture signals (calendar→temporal, notes→narrative, music→sensory, tasks→intent, email→activity)
+- [ ] iOS: Audit equivalents — SiriKit/App Intents, NSUserActivity, Shortcuts, MPNowPlayingInfoCenter, EventKit/Reminders
+- [ ] iOS: Identify platform parity gap vs Android
+- [ ] Chrome: Current extension context capabilities (tabs, history, bookmarks, Media Session API)
+- [ ] Chrome: Track WebMCP (Chrome 146+) — browser equivalent of AppFunctions for structured agent–website interaction
+- [ ] Desktop macOS: Accessibility APIs, NSWorkspace, MRMediaRemoteGetNowPlayingInfo
+- [ ] Desktop Windows: UI Automation API, SystemMediaTransportControls
+- [ ] Define abstract `app_context` node interface for capture-time enrichment
+- [ ] Per-signal confidence scoring based on platform mechanism quality (AppFunctions typed return = high; Accessibility scraping = lower)
+
+---
 
 ## Parking Lot (v1+)
 
-- Level 3 natural language recall via LLM delegation (note: ByteRover agents may already enable this)
 - 3-tier visualization (macro dashboards, mid-level graphs, micro knowledge graphs)
-- iOS and Android native apps
-- User-provided agents (WASM sandbox) — likely a SAGE responsibility
-- Team/family shared vaults — likely a SAGE responsibility (federation + multi-agent deployment exists)
-- Pebbles-to-UKU migration tooling for ai-pebbles users
-- Post-quantum readiness — AES-256 provides 128-bit PQ security; monitor ML-DSA-65 for signatures
-- Three-protocol stack monitoring: AppFunctions / WebMCP / A2A for UKU compatibility
-- Time-travel via SAGE consensus history — version-aware knowledge graph states
+- Native iOS/Android apps (eventual OS-native integration by Apple/Google)
+- TOML and JSON serialization bindings
+- MCP standard payload definition for agent interop
+- Embedded vector spec for local semantic search
+- Knowledge triple extraction from pebble body content
+- Time-travel via consensus history (versioned knowledge graph states)
+- Pebbles migration tooling for legacy ai-pebbles users
+- Post-quantum readiness — monitor ML-DSA-65 for signatures
+- Three-protocol stack monitoring: AppFunctions / WebMCP / A2A
+
+---
+
+## Out of scope (delegated, not building)
+
+These are explicitly NOT being built per the v0.3 spec ratification. The spec exposes integration hooks (Appendix G); deployments plug in their own choices.
+
+- **Vector DB** — delegated to ByteRover or community
+- **BFT consensus** — delegated to SAGE or community
+- **LLM agent runtime** — delegated to SAGE / external MCP servers
+- **Encryption / vault** — delegated to SAGE
+- **Sync engine** — delegated to SAGE federation
+- **Mobile apps** — eventual OS-native integration (Apple, Google)
+- **Marketplace / agent catalog** — community-driven via the open spec
+- **Subscription / pricing** — Pebbles is the blueprint, not the product
