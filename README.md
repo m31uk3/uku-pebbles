@@ -2,7 +2,7 @@
 
 **The AGENTS.md for knowledge work.**
 
-I believe there's an overlooked yet powerful primitive for capturing human memories. By adding YAML frontmatter (metadata) to the top of Markdown files, we can encode any action's intent (ontology) and significance (meaning) inside a single atomic **Universal Knowledge Unit (UKU)** — a *Pebble*.
+I believe there's an overlooked yet powerful primitive for capturing human memories. By adding YAML frontmatter (metadata) to the top of Markdown files, we can encode any action's intent (ontology) and significance (meaning) inside a single atomic **Pebble** — a Universal Knowledge Unit (UKU).
 
 Connect pebbles that share matching metadata and you can reconstruct your lived experiences with zero LLM calls — just basic similarity search.
 
@@ -48,7 +48,7 @@ The system works fully with red strings alone. Typed edges are a progressive enh
 | Tier | Source | Friction | Examples |
 |------|--------|----------|----------|
 | 1 | Auto-captured from device/browser | Zero | timestamp, device, GPS, active_url, file_ref, content_hash |
-| 2 | Human moment (mini-tweet + quick-tag) | 3–5 seconds | intent, emotional_state, people, tags |
+| 2 | Human moment (mini-tweet + quick-tag) | 3–5 seconds | intent, emotional_state, modality, people, tags |
 | 3 | Inferred without LLM | Zero | venue_type from GPS, source_type from file extension |
 | 4 | LLM-assisted inference (async) | Zero | Optimal attribute assignment using payload + existing index |
 
@@ -67,7 +67,7 @@ The system works fully with red strings alone. Typed edges are a progressive enh
 
 **Discovery surfaces:**
 - **Obsidian vault** — Pebbles appear as `.md` files with full frontmatter. Native integration.
-- **Pebbles dashboard** — Web-based graph view served by the daemon. Red strings visualized as connections. Filterable by any attribute.
+- **Pebbles dashboard** — Web-based graph view served by the local index. Red strings visualized as connections. Filterable by any attribute.
 
 **Capture UX** — Three modes (user preference):
 1. **Silent** — System captures what it can. No UI.
@@ -80,12 +80,12 @@ Collapsible drill-down — start at your level, go deeper when desired.
 
 ## Full Specification
 
-[`_specs/uku-pebbles.spec.md`](./_specs/uku-pebbles.spec.md)
+[`_specs/pebbles.spec.md`](./_specs/pebbles.spec.md)
 
 ## Repository Structure
 
 ```
-├── _specs/          # UKU schema specification (v2.3)
+├── _specs/          # Pebbles schema specification (v0.3.0-draft)
 ├── _discussions/    # Raw origin conversations (unedited)
 ├── _insights/       # Synthesis and analysis
 ├── _research/       # Architecture, design research, PDD artifacts
