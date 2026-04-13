@@ -1,5 +1,13 @@
 
 
+### Objectives
+
+The decisive evidence: Apple Photos, Google Photos, and Notion all gave up on header injection. Day One uses zip-with-manifest. Header injection is a maintenance nightmare with silent failure modes.
+
+Ready for next move when you are. The roadmap suggests Phase 0 (schema finalization) next, but you might want to address the open questions first or kick off parallel
+
+### Notes
+
 Thoughts on knowledge
 
 Rhetorical Situation
@@ -36,7 +44,8 @@ What is the User Journey of interfacing with the AIs?
 	1) =={--Insert Arese Architecture and Questions Here--}==
 
 
-Think about Internal Answers and James digest
+
+~~Think about Internal Answers and James digest - Sent to IA creator~~ 
 
 
 Place holder

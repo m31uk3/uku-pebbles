@@ -18,6 +18,12 @@ The No-Escape Theorem proves that semantic memory systems cannot escape interfer
 
 Pebbles is **the blueprint, not the product**. The moat comes from (1) mindful attribute design (Ekman 8 emotions + 5 uku_types + 4 intents + new kinetic/non-kinetic modality) executed precisely enough to unlock measurable performance via evals, and (2) viral mass adoption similar to AGENTS.md and SKILLS.md.
 
+**Two structural advantages discovered during convergence (added from /btw insights):**
+- **UKU is the only memory system that gets to choose how it forgets** -- the No-Escape theorem says forgetting is inevitable for semantic systems, but red strings are immune to that failure mode. Forgetting becomes a design surface, not a constraint. (See doc 13.)
+- **C4 architecture diagrams are the AGENTS.md-style viral adoption on-ramp** -- a one-page Context diagram makes the open-blueprint strategy visually undeniable in 60 seconds. (See doc 12.)
+
+**Three memory primitives still need spec work before code starts:** procedural memory (missing uku_type), forgetting/eviction lifecycle (unowned), and reconsolidation model (unclear SAGE boundary). Phase 0 expanded accordingly.
+
 ---
 
 ## 1. The Convergence
@@ -141,15 +147,26 @@ The Tier 3 inference belongs in defuddle because that's where the URL patterns a
 
 ## 4. Implementation Roadmap
 
-### Phase 0: Schema Finalization (1 week)
+### Phase 0: Schema Finalization (1-2 weeks)
 
-Before any code, lock down the controlled vocabularies:
+Before any code, lock down the controlled vocabularies AND the memory primitives. **This phase expanded after capturing the memory primitives /btw insight (see doc 13) -- forgetting/eviction and procedural memory cannot be retrofitted after the storage layer is built.**
 
+**Controlled vocabularies:**
 - [ ] **Ekman 8 emotional_state** -- finalize (joy, sadness, anger, fear, surprise, disgust, trust, anticipation)
 - [ ] **5 uku_type values** -- finalize (experience_capture, insight, problem_statement, proposed_solution, ontology_element) -- consider whether ontology_element belongs at the same level
 - [ ] **4 intent values** -- finalize (remember, act_on, share, think_about)
 - [ ] **NEW: 2 modality values** -- finalize (kinetic, non_kinetic) -- add to spec as optional Tier 2 field
 - [ ] **Field-level read/write permissions** -- which fields are human-only, agent-writable, system-computed
+
+**Memory primitives (NEW, from doc 13):**
+- [ ] **Add `memory_kind` field** -- episodic | semantic | procedural (orthogonal to uku_type)
+- [ ] **Add procedural memory surface** -- either new uku_types (procedural, skill, reference) OR `memory_kind` as the discriminator
+- [ ] **Define lifecycle fields** -- `last_accessed_at`, `consolidation_level`, `status` (active/archived/evicted/tombstoned), `status_reason`, `status_changed_at`, `reversible`
+- [ ] **Define vault-level forgetting policy structure** -- `default_action`, `age_threshold`, `importance_floor`, `user_override`
+- [ ] **Reframe consolidation hierarchy** -- L0=episodic, L3+=semantic, L1-L2=consolidation gradient (CLS hypothesis operationalized)
+- [ ] **Decide reconsolidation model** -- when SAGE consensus updates a fact, does it create a new pebble version or modify in place?
+
+**Why these belong in Phase 0, not later:** These are schema decisions, not implementation decisions. The storage layer's schema needs to support whatever forgetting and reconsolidation policies we choose. Retrofitting after Phase 2 means migrating data.
 
 ### Phase 1: Core CLI + Schema Validator (2 weeks)
 
@@ -170,6 +187,12 @@ pebble export <pebble> --native  # Tier 3 export
 - [ ] Markdown + YAML parser/writer
 - [ ] CLI command surface using commander.js
 - [ ] Agent interface (programmatic API for the same operations)
+
+**Architecture deliverables (NEW, from doc 12):**
+- [ ] **C4 L1 Context diagram** -- Pebbles spec + reference impl at center; humans, agents, ByteRover, SAGE, OS integrations, clipper/defuddle forks as actors. **Becomes the canonical "what is Pebbles" artifact for the README.**
+- [ ] **C4 L2 Container diagram** for v0.1 reference implementation -- CLI, file format, schema validator. Shows the minimum viable demonstration as a discrete buildable thing.
+- [ ] Use Mermaid `C4Context` and `C4Container` notation for portability
+- [ ] One-page artifact for external implementers (Andy at ByteRover) to grok in 60 seconds -- exactly what AGENTS.md-style viral adoption requires
 
 **Out of scope for Phase 1:**
 - Postgres indexer (Phase 2)
@@ -315,6 +338,20 @@ Some questions remain unresolved that need answers before Phase 1 starts:
 
 8. **Repo structure:** Monorepo (pebbles-core + pebbles-cli + pebbles-extract + pebbles-clipper) or separate repos? Monorepo is easier for code sharing but harder for community contributions.
 
+**NEW questions from doc 13 (memory primitives):**
+
+9. **`memory_kind` vs `uku_type` discriminator:** Add a new `memory_kind` field (episodic/semantic/procedural) orthogonal to `uku_type`, OR extend `uku_type` with new values (procedural, skill, reference)? Trade-off: orthogonality vs vocabulary explosion.
+
+10. **Procedural memory uniqueness:** Is procedural memory really distinct enough to warrant its own type, or is it just `experience_capture` with step semantics in the body?
+
+11. **Forgetting granularity:** Should forgetting be per-pebble (each pebble decides) or per-vault (vault policy)? Or both with vault-level defaults and per-pebble overrides?
+
+12. **Reversibility storage:** Does reversibility need a separate "shadow vault" or can tombstones live in the main vault with a status flag?
+
+13. **Reconsolidation model:** When SAGE consensus updates a fact, does it create a new pebble version or modify in place? This is the boundary between UKU and SAGE that needs to be clearly defined.
+
+14. **Consolidation level computation:** Should `consolidation_level` be set by the user/agent or computed from the edges (e.g., depth in the L0->L3+ hierarchy)?
+
 ---
 
 ## 8. Risk Register
@@ -343,6 +380,10 @@ Pre-synthesis, UKU-Pebbles felt like one of many memory architectures competing 
 
 4. **The viral adoption model is the only escape from the middleware trap.** Andy's ByteRover, l33tdawg's SAGE, and any future implementer all become free distribution channels for Pebbles. The schema spreads to wherever knowledge work happens.
 
+5. **UKU is the only memory system that can choose how it forgets.** (NEW from doc 13) Every other system is constrained by geometry to forget a certain way. UKU's structural immunity (b=0) means forgetting becomes a design surface. **"Pebbles forgets when you want it to, not when geometry forces it to"** is a value proposition no competitor can claim.
+
+6. **C4 diagrams are the AGENTS.md-style on-ramp.** (NEW from doc 12) The Context diagram becomes the canonical "what is Pebbles" artifact. External implementers grok it in 60 seconds. Viral adoption requires this kind of one-page graspability.
+
 **The synthesis is complete. The path is clear. The blocker is execution, not understanding.**
 
 ---
@@ -369,3 +410,5 @@ Pre-synthesis, UKU-Pebbles felt like one of many memory architectures competing 
 09. `09-glossary.md` -- definitions of all terms
 10. `10-kinetic-vs-non-kinetic.md` -- the new facet axis
 11. `11-final-converged-synthesis.md` -- this document
+12. `12-c4-architecture-communication.md` -- C4 diagram strategy for viral adoption (/btw insight)
+13. `13-memory-primitives-decomposition.md` -- episodic/semantic/procedural + forgetting/eviction gap (/btw insight)
