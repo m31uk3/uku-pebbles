@@ -16,6 +16,8 @@ A pebble is not the artifact itself — it's a **structured description** that m
 
 Inspired by the insight that "the simplest forms of memory work best," Pebble Piles are the digital equivalent of an evidence board. Every pebble is an item pinned to the wall; every matching YAML key-value pair is a string connecting them.
 
+Because retrieval is interference-immune, Pebbles forgets when you want it to — not when geometry forces it to.
+
 ## Architecture
 
 Four clearly bounded layers:
@@ -38,8 +40,9 @@ Layers 1–3 are **compile-time LLM-free**. The boundary between deterministic c
 
 ### Relationships
 
-- **Red strings** — Implicit, symmetric connections from matching YAML key-value pairs. Powered by JSONB + GIN index. Sub-millisecond compound faceted search.
-- **Typed edges** (optional, additive) — Explicit, directional relationships in a lightweight table. Created only during curation. Enables consolidation hierarchy (L0 raw → L1 consolidations → L2 Maps of Content → L3+ meta-syntheses).
+- **Red strings** — Implicit, symmetric connections from matching YAML key-value pairs. Orthogonal facet axes (`emotional_state`, `intent`, `modality`, `memory_kind`) compound to give 192+ combinations from four fields. Powered by JSONB + GIN index. Sub-millisecond compound faceted search.
+- **Ontology governance** (optional) — Every pebble may link to one or more ontology pebbles via `governed_by`, anchoring its claims against ground-truth structures that agents can traverse for fact verification. Inspired by Palantir Foundry's Object Type model.
+- **Typed edges** (optional, additive) — Explicit, directional relationships in a lightweight table. Created only during curation. Enables consolidation hierarchy (L0 raw → L1 consolidations → L2 Maps of Content → L3+ meta-syntheses) — operationalizing the Zettelkasten method (Luhmann 1952) and Complementary Learning Systems (McClelland 1995).
 
 The system works fully with red strings alone. Typed edges are a progressive enhancement that never breaks core functionality.
 
