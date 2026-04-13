@@ -84,17 +84,3 @@ Collapsible drill-down — start at your level, go deeper when desired.
 ## Full Specification
 
 [`_specs/pebbles.spec.md`](./_specs/pebbles.spec.md)
-
-## Repository Structure
-
-```
-├── _specs/          # Pebbles schema specification (v0.3.0-draft)
-├── _discussions/    # Raw origin conversations (unedited)
-├── _insights/       # Synthesis and analysis
-├── _research/       # Architecture, design research, PDD artifacts
-└── README.md
-```
-
-## License
-
-MIT
