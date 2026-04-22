@@ -1,0 +1,52 @@
+{
+  "$schema": "pebble-template/v0.3",
+  "name": "slack",
+  "description": "Slack message/thread capture. Extracts structured source provenance from Slack API data.",
+  "priority": 10,
+  "match": {
+    "source_app": "slack",
+    "url_pattern": "*.slack.com/archives/*"
+  },
+  "extends": "org",
+
+  "fields": {
+    "required": {
+      "source": {
+        "type": "object",
+        "fields": {
+          "app": { "type": "string", "const": "slack" },
+          "workspace": { "type": "string", "description": "Slack workspace identifier" },
+          "channel_id": { "type": "string", "description": "Channel ID (C-prefixed)" },
+          "channel_name": { "type": "string", "description": "Human-readable channel name" },
+          "thread_ts": { "type": "string", "description": "Thread parent timestamp" }
+        }
+      }
+    },
+    "defaults": {
+      "pebble_type": "experience_capture",
+      "memory_kind": "episodic",
+      "modality": "kinetic"
+    },
+    "optional": {
+      "source.message_ts": { "type": "string", "description": "Specific message timestamp if targeting a reply" },
+      "source.is_thread": { "type": "boolean" },
+      "people": {
+        "type": "array",
+        "items": {
+          "alias": "string",
+          "name": "string",
+          "role": "string",
+          "is_bot": "boolean"
+        }
+      }
+    }
+  },
+
+  "extraction_hints": {
+    "workspace": "parse from URL: https://{workspace}.slack.com/...",
+    "channel_id": "from URL path: /archives/{channel_id}/...",
+    "channel_name": "from Slack API channel.name field",
+    "thread_ts": "from URL query param thread_ts or message timestamp",
+    "people": "from message user objects in thread"
+  }
+}

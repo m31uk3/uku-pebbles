@@ -1,0 +1,18 @@
+{
+  "$schema": "pebble-template/v0.3",
+  "name": "org",
+  "description": "Organization-level defaults. Applied to all work pebbles.",
+  "priority": 1,
+  "match": { "always": true },
+  "extends": "base",
+
+  "fields": {
+    "defaults": {
+      "org": "global-real-estate",
+      "team": "Business Innovation and AI (BIA)",
+      "location": {
+        "venue_type": "office"
+      }
+    }
+  }
+}

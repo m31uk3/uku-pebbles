@@ -1,0 +1,137 @@
+{
+  "$schema": "pebble-template/v0.3",
+  "name": "known-issue",
+  "description": "Known issue capture — bugs, outages, gotchas, failure modes. Incorporates MRE principles (Minimal, Reproducible, Complete) from Stack Overflow. See references/minimal-reproducible-example.md.",
+  "priority": 10,
+  "match": {
+    "pebble_type": "problem_statement",
+    "tags_contain": ["known-issue"]
+  },
+  "extends": "org",
+
+  "fields": {
+    "required": {
+      "severity": {
+        "type": "enum",
+        "values": ["critical", "high", "medium", "low"],
+        "red_string": true,
+        "description": "Triage priority"
+      },
+      "affected_systems": {
+        "type": "array",
+        "items": "string",
+        "red_string": true,
+        "description": "Systems, tools, or services affected (controlled vocabulary — red-string eligible)"
+      },
+      "environment": {
+        "type": "enum",
+        "values": ["production", "staging", "development", "all"],
+        "red_string": true,
+        "description": "Where the issue manifests"
+      },
+      "reproducibility": {
+        "type": "enum",
+        "values": ["always", "intermittent", "once", "unknown"],
+        "red_string": true,
+        "description": "How reliably the issue reproduces. If 'always', reproduction steps MUST be minimal and complete per MRE principles."
+      },
+      "workaround_available": {
+        "type": "boolean",
+        "red_string": true,
+        "description": "Highest-value triage signal — answers 'can I unblock myself right now?'"
+      },
+      "resolution_status": {
+        "type": "enum",
+        "values": ["investigating", "workaround_only", "fix_in_progress", "resolved"],
+        "red_string": true,
+        "description": "Current resolution state"
+      },
+      "root_cause_known": {
+        "type": "boolean",
+        "red_string": true,
+        "description": "Whether root cause has been identified"
+      },
+      "discovered_at": {
+        "type": "iso8601",
+        "description": "When first observed (may differ from created_at)"
+      },
+      "discovered_by": {
+        "type": "array",
+        "items": {
+          "alias": "string",
+          "name": "string",
+          "role": "string"
+        },
+        "description": "Who first reported the issue"
+      }
+    },
+    "defaults": {
+      "pebble_type": "problem_statement",
+      "memory_kind": "episodic",
+      "modality": "kinetic",
+      "category": "problem",
+      "intent": "act_on",
+      "status": "active",
+      "pin": true
+    },
+    "optional": {
+      "impact_scope": {
+        "type": "string",
+        "description": "Who/what is affected (prose — not red-string eligible)"
+      },
+      "workaround_summary": {
+        "type": "string",
+        "description": "One-line workaround (populate when workaround_available: true)"
+      },
+      "resolved_at": {
+        "type": "iso8601",
+        "description": "When resolved (null until then)"
+      },
+      "related_tickets": {
+        "type": "array",
+        "items": "string",
+        "description": "SIM/ticket IDs"
+      }
+    }
+  },
+
+  "body_template": [
+    "## Symptom",
+    "",
+    "<!-- What the user/system observes. One paragraph. No interpretation. -->",
+    "",
+    "## Impact",
+    "",
+    "<!-- Who is affected, how many, what can't they do. Quantify. -->",
+    "",
+    "## Minimal Reproduction (MRE)",
+    "",
+    "<!-- Minimal: smallest set of steps that triggers the issue -->",
+    "<!-- Complete: include all context someone needs to reproduce -->",
+    "<!-- Reproducible: verify these steps actually trigger the issue before submitting -->",
+    "",
+    "**Environment:** ",
+    "**Steps:**",
+    "1. ",
+    "2. ",
+    "3. ",
+    "",
+    "**Expected:** ",
+    "**Actual:** ",
+    "",
+    "## Workaround",
+    "",
+    "<!-- If workaround_available: true — exact steps. If false: 'None known.' -->",
+    "",
+    "## Root Cause",
+    "",
+    "<!-- If root_cause_known: true — explain. If false: 'Under investigation.' -->",
+    "",
+    "## Timeline",
+    "",
+    "| Date | Event |",
+    "|------|-------|",
+    "",
+    "## References"
+  ]
+}

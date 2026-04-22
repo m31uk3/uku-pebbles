@@ -4,25 +4,6 @@
 
 **Version:** 0.3.0-draft (April 2026)
 **Status:** Active Draft
-
-**Changelog (v0.2.3 → v0.3.0)**
-- Renamed schema identifiers from `uku_*` to `pebble_*` (`uku_id` → `pebble_id`, `uku_type` → `pebble_type`)
-- `pebble_id` format: ULID (26 alphanumeric characters, time-sortable, no prefix)
-- Added `memory_kind` orthogonal field (`episodic | semantic | procedural`)
-- Added `modality` top-level field (`kinetic | non_kinetic`)
-- Promoted `ontology` to first-class `pebble_type`; added `governed_by` 1:many ontology link
-- Added Capture-Immutable vs Curator-Editable field classes
-- Added Lifecycle & Forgetting Policy (vault-level defaults + per-pebble overrides; system never auto-tombstones or auto-deletes)
-- Added scheduled `archive_at` field
-- Added flagged tombstone `status: tombstoned` (no shadow vault)
-- Added Promotion (L0 → L1) as a curation operation with Zettelkasten graduation rules
-- Reframed L0–L3+ consolidation hierarchy as CLS / Zettelkasten lineage (McClelland 1995, Luhmann 1952)
-- Removed `consolidation_level` from YAML (derived at query time from edge topology)
-- Layer-based conformance replaces Reader/Writer/Full taxonomy
-- Versioning, Migration & Curation Rights section codified; curation freely edits curator-editable fields without versioning events
-- SAGE and ByteRover removed from core spec; relocated to non-normative Appendix G as integration patterns
-- All temporal fields require full ISO 8601 with explicit timezone (UTC `Z` preferred); date-only values invalid
-- Renamed Appendix B "Ekman 8" to "Plutchik 8 Primary" (label correction; vocabulary unchanged)
 - Added Appendices E (Modality), F (memory_kind / CLS-Zettelkasten lineage), G (Integration Patterns)
 - Cross-references between pebbles use (label, uid) object tuple form
 - File renamed: `_specs/uku-pebbles.spec.md` → `_specs/pebbles.spec.md`
@@ -144,6 +125,7 @@ protected: true                    # requires explicit user action to archive
 | `pebble.md` | Tier 1 pure-text pebble. Markdown file with YAML frontmatter. |
 | `.pebble` | Tier 2 zip container. Wraps an artifact (image, audio, PDF, etc.) plus a `pebble.yaml` manifest and `body.md`. EPUB-style structure. |
 | `pebble_id` | Unique identifier. ULID format (26 alphanumeric characters, time-sortable, no prefix). |
+| `pebble_short` | Human-friendly secondary key. Last 12 characters of the `pebble_id` (60 bits of randomness). Collision-safe to ~7.7M items per segment (vault/repo/namespace). Regex: `^[0-9A-HJKMNP-TV-Z]{12}$`. Used in inline mentions, filenames, and conversation. The full 26-char `pebble_id` remains the primary key. |
 
 ---
 

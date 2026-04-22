@@ -1,6 +1,6 @@
 ---
-name: pebble-capture
-description: Capture episodic memories as Pebbles (Universal Knowledge Units). Use when the user says "save this as a pebble", "capture this", "pebble this", "remember this", mentions pebbles, UKU, episodic memory, or wants to persist a Slack message, email, meeting note, web page, or terminal session as structured knowledge. Applies hierarchical templates from ~/.pebbles/templates/ to maximize context capture with minimal friction.
+name: capturing-pebbles
+description: Captures episodic memories as Pebbles (Universal Knowledge Units). Use when the user says "save this as a pebble", "capture this", "pebble this", "remember this", mentions pebbles, UKU, episodic memory, or wants to persist a Slack message, email, meeting note, web page, or terminal session as structured knowledge. Applies hierarchical templates from ~/.pebbles/templates/ to maximize context capture with minimal friction.
 ---
 
 # Pebble Capture
@@ -24,24 +24,52 @@ Create spec-compliant Pebbles (v0.3) from any source — Slack threads, emails, 
 - All timestamps must be full ISO 8601 with timezone (Z preferred)
 - Never use date-only values
 
+## Standard Path
+
+`~/.pebbles/` is the standard config location on all systems (macOS, Linux, cloud desktops, AgentSpaces). The skill MUST always read templates from `~/.pebbles/templates/`.
+
+### Available vs Installed Templates
+
+The skill ships with all templates in its `templates/` directory. Only `.sys.json` (system default) templates are installed to `~/.pebbles/templates/` automatically. User templates (`.user.json`) are opt-in.
+
+| Suffix | Meaning | Installed by default |
+|--------|---------|---------------------|
+| `.sys.json` | System — source-type templates for where content came from | Yes |
+| `.user.json` | User — content-type templates for what kind of knowledge it is | No |
+
+A pebble can stack both axes: a known issue from Slack applies `base` → `org` → `slack` → `known-issue`.
+
+### Zettelkasten Hierarchy
+
+Templates serve L0 capture. Literature notes (L0.5) are reference pebbles — `web.sys.json` defaults to `pebble_type: reference`, `memory_kind: semantic`.
+
+| Level | Zettelkasten | Pebbles | Template |
+|-------|-------------|---------|----------|
+| L0 | Fleeting notes | Raw episodic pebbles | All `.sys.json` templates |
+| L0.5 | Literature notes | Reference pebbles | `web.sys.json` (default) |
+| L1 | Permanent notes | Consolidated insights | Promoted via curation |
+| L2+ | Maps of Content | Synthesis/ontology | Agent or human authored |
+
 ## Step 1: Detect Source & Load Templates
 
-1. Read `~/.pebbles/templates/00-base.json` (always)
-2. Read `~/.pebbles/templates/01-org.json` (always)
-3. Match app template by `source_app` or URL pattern:
-   - `*.slack.com/*` → `10-slack.json`
-   - Email conversation ID → `10-email.json`
-   - `https://*` (general web) → `10-web.json`
-   - Meeting context → `10-meeting.json`
-   - Terminal/CLI → `10-terminal.json`
-4. Stack templates: base → org → app (later overrides earlier defaults)
-5. Determine vault path and create `_pebbles/{YYYY}/{MM}/{DD}/` directory
+1. Read `~/.pebbles/templates/base.sys.json` (always)
+2. Read `~/.pebbles/templates/org.sys.json` (always)
+3. Match source-type template by `source_app` or URL pattern:
+   - `*.slack.com/*` → `slack.sys.json`
+   - Email conversation ID → `email.sys.json`
+   - `https://*` (general web) → `web.sys.json`
+   - Meeting context → `meeting.sys.json`
+   - Terminal/CLI → `terminal.sys.json`
+4. Match content-type template by `pebble_type` + `tags` (if installed):
+   - `problem_statement` + `known-issue` tag → `known-issue.user.json`
+5. Stack templates: base → org → source → content (later overrides earlier defaults)
+6. Determine vault path and create `_pebbles/{YYYY}/{MM}/{DD}/` directory
 
 ## Step 2: Extract Source Provenance
 
 Based on matched template, extract structured `source` block.
 
-### For Slack (`10-slack.json`):
+### For Slack (`slack.sys.json`):
 1. Parse URL: `https://{workspace}.slack.com/archives/{channel_id}/p{ts}`
 2. Use Slack MCP tools (`get_thread`, `get_channel`) to fetch:
    - `source.workspace` from URL
@@ -51,7 +79,7 @@ Based on matched template, extract structured `source` block.
    - `people[]` from message user objects (alias, name, role, is_bot)
 3. Capture full thread content for the body
 
-### For Email (`10-email.json`):
+### For Email (`email.sys.json`):
 1. Use email MCP tools (`email_read`) to fetch:
    - `source.subject`, `source.from`, `source.to`, `source.cc`
    - `source.conversation_id`, `source.message_id`
@@ -59,18 +87,18 @@ Based on matched template, extract structured `source` block.
    - `people[]` from participants
 2. Capture email body as markdown for the pebble body
 
-### For Web (`10-web.json`):
+### For Web (`web.sys.json`):
 1. Fetch page content (defuddle extraction path when available)
 2. Extract: `source.domain`, `source.url`, `source.author`, `source.published`
 3. Capture extracted content for the body
 
-### For Meeting (`10-meeting.json`):
+### For Meeting (`meeting.sys.json`):
 1. Use calendar MCP tools to fetch event metadata
 2. Extract: `source.title`, `source.start_time`, `source.end_time`, `source.organizer`
 3. `people[]` from attendees
 4. User provides meeting notes as body
 
-### For Terminal (`10-terminal.json`):
+### For Terminal (`terminal.sys.json`):
 1. Auto-detect: `source.shell` from `$SHELL`, `source.working_dir` from `$PWD`
 2. `source.hostname` from system
 3. `device` block from system info
@@ -110,8 +138,9 @@ If user wants to refine:
 ## References
 
 - Pebbles Spec v0.3: `references/pebbles-spec-summary.md`
-- Template System: `~/.pebbles/README.md`
-- Templates: `~/.pebbles/templates/*.json`
+- Minimal Reproducible Example: `references/minimal-reproducible-example.md`
+- Template System: `templates/README.md`
+- Templates: `~/.pebbles/templates/*.json` (installed) or `templates/*.json` (available)
 
 ## Troubleshooting
 

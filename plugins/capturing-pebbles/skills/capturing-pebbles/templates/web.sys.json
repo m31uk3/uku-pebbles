@@ -1,0 +1,36 @@
+{
+  "$schema": "pebble-template/v0.3",
+  "name": "web",
+  "description": "Web page capture via browser clipper (defuddle extraction path).",
+  "priority": 10,
+  "match": {
+    "source_app": "web",
+    "url_pattern": "https://*"
+  },
+  "extends": "org",
+
+  "fields": {
+    "required": {
+      "source": {
+        "type": "object",
+        "fields": {
+          "app": { "type": "string", "const": "web" },
+          "domain": { "type": "string", "description": "Extracted from URL hostname" },
+          "url": { "type": "string" }
+        }
+      }
+    },
+    "defaults": {
+      "pebble_type": "reference",
+      "memory_kind": "semantic",
+      "modality": "non_kinetic"
+    },
+    "optional": {
+      "source.author": { "type": "string" },
+      "source.published": { "type": "iso8601" },
+      "source.site_name": { "type": "string" },
+      "source.extractor": { "type": "string", "description": "defuddle extractor type used" },
+      "content_hash": { "type": "string", "description": "sha256 of extracted content" }
+    }
+  }
+}

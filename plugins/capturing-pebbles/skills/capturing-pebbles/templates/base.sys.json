@@ -1,0 +1,37 @@
+{
+  "$schema": "pebble-template/v0.3",
+  "name": "base",
+  "description": "Global base template. Always applied first. Spec-required fields.",
+  "priority": 0,
+  "match": { "always": true },
+
+  "fields": {
+    "required": {
+      "title": { "type": "string", "max_length": 120 },
+      "pebble_id": { "type": "ulid", "auto": true },
+      "created_at": { "type": "iso8601", "auto": true },
+      "pebble_type": {
+        "type": "enum",
+        "values": ["experience_capture", "insight", "problem_statement", "proposed_solution", "reference", "ontology"]
+      }
+    },
+    "defaults": {
+      "memory_kind": "episodic",
+      "modality": "non_kinetic",
+      "status": "draft",
+      "pin": false
+    }
+  },
+
+  "file_naming": {
+    "pattern": "{stub}-{ulid}-{DDMMMYY}-{HHMMSS}.md",
+    "stub_max_chars": 20,
+    "date_format": "DDMMMYY-HHMMSS",
+    "example": "kiro-dmg-cleanup-01KP91SHRJPBXY5MDA8RHQP08D-15APR26-165234.md"
+  },
+
+  "file_structure": {
+    "pattern": "_pebbles/{YYYY}/{MM}/{DD}/",
+    "example": "_pebbles/2026/04/15/"
+  }
+}

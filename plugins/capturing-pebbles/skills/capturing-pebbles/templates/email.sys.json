@@ -1,0 +1,37 @@
+{
+  "$schema": "pebble-template/v0.3",
+  "name": "email",
+  "description": "Email capture. Extracts structured source provenance from email metadata.",
+  "priority": 10,
+  "match": {
+    "source_app": "email"
+  },
+  "extends": "org",
+
+  "fields": {
+    "required": {
+      "source": {
+        "type": "object",
+        "fields": {
+          "app": { "type": "string", "const": "email" },
+          "provider": { "type": "string", "description": "outlook | gmail | ses" },
+          "subject": { "type": "string" },
+          "from": { "type": "string" },
+          "to": { "type": "array", "items": "string" }
+        }
+      }
+    },
+    "defaults": {
+      "pebble_type": "experience_capture",
+      "memory_kind": "episodic",
+      "modality": "kinetic"
+    },
+    "optional": {
+      "source.cc": { "type": "array", "items": "string" },
+      "source.conversation_id": { "type": "string" },
+      "source.message_id": { "type": "string" },
+      "source.folder": { "type": "string" },
+      "people": { "type": "array" }
+    }
+  }
+}

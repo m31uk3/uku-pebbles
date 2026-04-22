@@ -1,0 +1,40 @@
+{
+  "$schema": "pebble-template/v0.3",
+  "name": "terminal",
+  "description": "Terminal/CLI session capture. Commands, outputs, troubleshooting.",
+  "priority": 10,
+  "match": {
+    "source_app": "terminal"
+  },
+  "extends": "org",
+
+  "fields": {
+    "required": {
+      "source": {
+        "type": "object",
+        "fields": {
+          "app": { "type": "string", "const": "terminal" },
+          "shell": { "type": "string", "description": "zsh | bash | fish" }
+        }
+      }
+    },
+    "defaults": {
+      "pebble_type": "experience_capture",
+      "memory_kind": "procedural",
+      "modality": "kinetic"
+    },
+    "optional": {
+      "source.working_dir": { "type": "string" },
+      "source.hostname": { "type": "string" },
+      "source.tool": { "type": "string", "description": "kiro-cli | git | aws | docker" },
+      "device": {
+        "type": "object",
+        "fields": {
+          "os": "string",
+          "arch": "string",
+          "version": "string"
+        }
+      }
+    }
+  }
+}
