@@ -84,3 +84,15 @@ Collapsible drill-down — start at your level, go deeper when desired.
 ## Full Specification
 
 [`_specs/pebbles.spec.md`](./_specs/pebbles.spec.md)
+
+## Backlog
+
+Tracked in `todos.jsonl` (Agentic TodoFS format — ULID-keyed, append-only, git-diffable).
+
+```bash
+# All open items
+jq -r 'select(.status=="open") | "\(.phase) | \(.title)"' todos.jsonl | sort
+
+# By phase
+jq -r 'select(.phase=="1" and .status=="open") | .title' todos.jsonl
+```
